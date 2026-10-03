@@ -1,18 +1,49 @@
-// --- INVENTORY DOMAIN ---
-export interface UnitType {
+export interface TransferItemResponseDto {
+  itemId: number;
+  itemName: string;
+  quantity: number;
+}
+
+export interface StockTransferResponse {
   id: number;
-  name: string;
-  abbreviation: string;
+  fromBranchId: number;
+  fromBranchName: string;
+  toBranchId: number;
+  toBranchName: string;
+  requestedById: number;
+  requestedByUsername: string;
+  statusId: number;
+  statusName: string;
+  requestTime: string;
+  items: TransferItemResponseDto[];
+}
+
+export interface TransferItemDto {
+  inventoryItemId: number;
+  quantity: number;
+}
+
+export interface StockTransferCreateRequest {
+  fromBranchId: number;
+  toBranchId: number;
+  requestedById: number;
+  statusId: number;
+  items: TransferItemDto[];
 }
 
 export interface Category {
-  id: number;
-  name: string;
-  code: string;
+  id?: number;
+  categoryName: string;
+  description?: string;
+}
+
+export interface UnitType {
+  id?: number;
+  unit: string;
 }
 
 export interface InventoryItem {
-  id: number;
+  id?: number;
   sku: string;
   name: string;
   category: Category;
@@ -20,6 +51,8 @@ export interface InventoryItem {
   reorderLevel: number;
   unitPrice: number;
 }
+
+
 
 // --- STOCK DOMAIN ---
 export interface StockItem {
@@ -32,17 +65,7 @@ export interface StockItem {
   locationCode: string;
 }
 
-export interface TransferItemDto {
-  itemId: number;
-  quantity: number;
-}
 
-export interface StockTransferCreateRequest {
-  sourceBranchId: number;
-  destinationBranchId: number;
-  items: TransferItemDto[];
-  notes?: string;
-}
 
 export interface StockTransferResponse {
   id: number;

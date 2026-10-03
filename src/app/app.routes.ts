@@ -1,11 +1,18 @@
 import { Routes } from '@angular/router';
-import { LandingComponent } from './features/landing/landing.component';
-import { LoginComponent } from './features/auth/login.component';
 import { ShellComponent } from './core/layout/shell.component';
+import { Landing } from './features/landing/landing';
+import { Auth } from './features/auth/auth';
+import { Inventory } from './features/inventory/inventory';
+import { Stock } from './features/stock/stock';
+import { Distribution } from './features/distribution/distribution';
+import { Procurement } from './features/procurement/procurement';
+import { Organization } from './features/organization/organization';
+import { Forecasting } from './features/forecasting/forecasting';
+import { Audit } from './features/audit/audit';
 
 export const routes: Routes = [
-  { path: '', component: LandingComponent },
-  { path: 'login', component: LoginComponent },
+  { path: '', component: Landing },
+  { path: 'login', component: Auth },
   {
     path: 'app',
     component: ShellComponent,
@@ -13,48 +20,31 @@ export const routes: Routes = [
       { path: '', redirectTo: 'inventory', pathMatch: 'full' },
       {
         path: 'inventory',
-        loadComponent: () =>
-          import('./features/inventory/inventory.component').then((m) => m.InventoryComponent),
+        component: Inventory,
       },
       {
         path: 'stock',
-        loadComponent: () =>
-          import('./features/stock/stock-transfers.component').then(
-            (m) => m.StockTransfersComponent,
-          ),
+        component: Stock,
       },
       {
         path: 'distribution',
-        loadComponent: () =>
-          import('./features/distribution/distribution.component').then(
-            (m) => m.DistributionComponent,
-          ),
+        component: Distribution,
       },
       {
         path: 'procurement',
-        loadComponent: () =>
-          import('./features/procurement/procurement.component').then(
-            (m) => m.ProcurementComponent,
-          ),
+        component: Procurement,
       },
       {
         path: 'organization',
-        loadComponent: () =>
-          import('./features/organization/organization.component').then(
-            (m) => m.OrganizationComponent,
-          ),
+        component: Organization,
       },
       {
         path: 'forecasting',
-        loadComponent: () =>
-          import('./features/forecasting/forecasting.component').then(
-            (m) => m.ForecastingComponent,
-          ),
+        component: Forecasting,
       },
       {
         path: 'audit',
-        loadComponent: () =>
-          import('./features/audit/audit.component').then((m) => m.AuditComponent),
+        component: Audit,
       },
     ],
   },

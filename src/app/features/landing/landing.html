@@ -1,1 +1,53 @@
-<p>landing works!</p>
+<div class="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
+  <header class="border-b border-slate-800 bg-slate-950/80 backdrop-blur sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div
+          class="h-9 w-9 rounded-xl bg-indigo-600 flex items-center justify-center font-black text-white text-base"
+        >
+          S
+        </div>
+        <span class="font-bold text-lg text-white">StockCore</span>
+      </div>
+      <div class="flex items-center gap-4">
+        <a routerLink="/login" class="text-sm font-medium text-slate-300 hover:text-white"
+        >Sign In</a
+        >
+        <a
+          routerLink="/login"
+          class="text-sm font-semibold px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-white transition"
+        >
+          Open Dashboard
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <main
+    class="flex-1 flex flex-col justify-center items-center text-center px-6 py-20 max-w-4xl mx-auto"
+  >
+    <div
+      class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-indigo-500/20 bg-indigo-500/10 text-indigo-400 text-xs font-semibold mb-6"
+    >
+      <span class="h-2 w-2 rounded-full bg-indigo-400"></span>
+      Integrated with Spring Boot Domain Engine
+    </div>
+
+    <h1
+      class="text-4xl md:text-6xl font-extrabold text-white tracking-tight mb-6 leading-tight"
+    >
+      Modern Stock & Logistics Orchestration
+    </h1>
+    <p class="text-base md:text-lg text-slate-400 max-w-2xl mb-10">
+      Clean, minimal frontend for real-time inventory levels, multi-branch stock transfers,
+      consumption tracking, and automated forecasting.
+    </p>
+
+    <a
+      routerLink="/login"
+      class="px-8 py-3.5 bg-indigo-600 hover:bg-indigo-500 font-semibold text-white rounded-xl shadow-lg shadow-indigo-600/20 transition"
+    >
+      Launch Console &rarr;
+    </a>
+  </main>
+</div>
