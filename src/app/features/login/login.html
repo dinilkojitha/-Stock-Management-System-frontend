@@ -1,0 +1,70 @@
+<div class="relative min-h-screen flex items-center justify-center bg-slate-50 overflow-hidden font-sans p-4">
+
+  <!-- Animated Background Bubbles -->
+  <div class="absolute top-[-10%] left-[-10%] w-96 h-96 bg-indigo-200 rounded-full mix-blend-multiply filter blur-[80px] opacity-70 animate-blob"></div>
+  <div class="absolute top-[-10%] right-[-5%] w-96 h-96 bg-fuchsia-200 rounded-full mix-blend-multiply filter blur-[80px] opacity-70 animate-blob animation-delay-2000"></div>
+  <div class="absolute bottom-[-20%] left-[20%] w-96 h-96 bg-cyan-200 rounded-full mix-blend-multiply filter blur-[80px] opacity-70 animate-blob animation-delay-4000"></div>
+
+  <!-- Main Login Card (Glassmorphism + Bubble Shape) -->
+  <div class="relative z-10 w-full max-w-md p-10 bg-white/70 backdrop-blur-2xl border border-white/60 rounded-[2.5rem] shadow-[0_8px_40px_rgb(0,0,0,0.06)]">
+
+    <!-- Header Area -->
+    <div class="text-center mb-8">
+      <div class="inline-flex items-center justify-center w-16 h-16 bg-white rounded-full shadow-sm mb-4 border border-slate-100 text-indigo-500">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-8 h-8">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+        </svg>
+      </div>
+      <h1 class="text-2xl font-extrabold text-slate-800 tracking-tight">Welcome Back</h1>
+      <p class="text-sm text-slate-500 mt-1 font-medium">Please sign in to your account</p>
+    </div>
+
+    <!-- Login Form -->
+    <form (ngSubmit)="onSubmit()" class="space-y-5">
+
+      <!-- Pill-shaped Email Input -->
+      <div>
+        <input
+          type="email"
+          name="email"
+          [(ngModel)]="email"
+          required
+          placeholder="Email address"
+          class="w-full px-6 py-3.5 bg-white/80 border border-slate-200 rounded-full text-sm text-slate-800 focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all shadow-sm placeholder:text-slate-400 font-medium"
+        />
+      </div>
+
+      <!-- Pill-shaped Password Input -->
+      <div>
+        <input
+          type="password"
+          name="password"
+          [(ngModel)]="password"
+          required
+          placeholder="Password"
+          class="w-full px-6 py-3.5 bg-white/80 border border-slate-200 rounded-full text-sm text-slate-800 focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all shadow-sm placeholder:text-slate-400 font-medium"
+        />
+      </div>
+
+      <!-- Utilities -->
+      <div class="flex items-center justify-between px-2">
+        <label class="flex items-center gap-2 cursor-pointer group">
+          <input type="checkbox" class="w-4 h-4 rounded-full text-indigo-500 border-slate-300 focus:ring-indigo-500 cursor-pointer accent-indigo-500" />
+          <span class="text-xs font-medium text-slate-500 group-hover:text-slate-700 transition-colors">Remember me</span>
+        </label>
+      </div>
+
+      <!-- Primary Button (Gradient + Pill Shape) -->
+      <button
+        type="submit"
+        class="w-full mt-2 px-6 py-3.5 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white rounded-full text-sm font-bold tracking-wide shadow-lg shadow-indigo-500/30 hover:shadow-indigo-500/50 transform hover:-translate-y-0.5 transition-all duration-200"
+      >
+        Sign In
+      </button>
+
+    </form>
+
+
+
+  </div>
+</div>

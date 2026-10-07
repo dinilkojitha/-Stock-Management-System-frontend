@@ -1,8 +1,14 @@
 import { Component, inject, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { StockTransferResponse, StockTransferCreateRequest } from '../../models/domain.models';
+import {
+  StockTransferResponse,
+  StockTransferCreateRequest,
+  BranchResponse,
+  Item,
+} from '../../models/domain.models';
 import { ApiService } from '../../core/services/api.service';
+import { Inventory } from '../inventory/inventory';
 
 @Component({
   selector: 'app-stock',
@@ -13,24 +19,48 @@ import { ApiService } from '../../core/services/api.service';
 })
 export class Stock implements OnInit {
   private api = inject(ApiService);
+  Itemses = signal<any[]>([]); // Replace 'any' with the actual type of your items if available
 
   transfers = signal<StockTransferResponse[]>([]);
   searchBranchId = signal<string>('');
   selectedTransfer = signal<StockTransferResponse | null>(null);
   showCreateModal = signal<boolean>(false);
   errorMessage = signal<string | null>(null);
+  branches = signal<BranchResponse[]>([]);
 
   // New transfer modal form state
   newTransfer: StockTransferCreateRequest = {
     fromBranchId: 1,
     toBranchId: 2,
     requestedById: 1,
-    statusId: 1,
-    items: [{ inventoryItemId: 1, quantity: 10 }],
+    items: [] as Item[],
   };
 
   ngOnInit() {
+    this.loadItems();
     this.loadTransfers();
+    this.loadAllBranches();
+  }
+
+  loadAllBranches() {
+    this.api.getAllBranches().subscribe({
+      next: (data) => {
+        console.log('Branches loaded:', data);
+        this.branches.set(data);
+      },
+      error: (err) => this.errorMessage.set('Failed to load branches'),
+    });
+  }
+
+  loadItems() {
+    this.api.getItems().subscribe({
+      next: (data) => {
+        console.log('Items loaded:', data);
+        this.Itemses.set(data);
+        console.log('Items signal updated:', this.Itemses());
+      },
+      error: (err) => this.errorMessage.set('Failed to load items'),
+    });
   }
 
   loadTransfers() {
@@ -78,7 +108,8 @@ export class Stock implements OnInit {
   }
 
   addItemRow() {
-    this.newTransfer.items.push({ inventoryItemId: 1, quantity: 1 });
+    // @ts-ignore
+    this.newTransfer.items.push({ id: 0, itemName: "" , quantity: 0});
   }
 
   removeItemRow(index: number) {
@@ -88,6 +119,7 @@ export class Stock implements OnInit {
   }
 
   submitTransfer() {
+    console.log('Submitting transfer:', this.newTransfer);
     this.api.createTransfer(this.newTransfer).subscribe({
       next: (created) => {
         this.transfers.update((list) => [created, ...list]);

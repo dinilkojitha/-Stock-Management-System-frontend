@@ -1,34 +1,188 @@
-<div class="space-y-6">
-  <div>
-    <h1 class="text-xl font-bold text-slate-900">Stock Forecasting</h1>
-    <p class="text-xs text-slate-500">Run-out predictions and smart replenish orders.</p>
+<div class="space-y-6 max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
+
+  <!-- Header & Tabs -->
+  <div class="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 border-b border-slate-200 pb-4">
+    <div>
+      <h1 class="text-2xl font-bold tracking-tight text-slate-900">Demand Forecasting</h1>
+      <p class="text-xs text-slate-500">Run-out predictions, automated wastage tracking, and historical algorithms.</p>
+    </div>
+
+    <div class="flex bg-slate-100 p-1 rounded-lg">
+      <button (click)="setTab('planning')" [class.bg-white]="activeTab() === 'planning'" [class.shadow-sm]="activeTab() === 'planning'" class="px-4 py-1.5 text-sm font-medium rounded-md text-slate-700 transition">Smart Planning</button>
+      <button (click)="setTab('wastage')" [class.bg-white]="activeTab() === 'wastage'" [class.shadow-sm]="activeTab() === 'wastage'" class="px-4 py-1.5 text-sm font-medium rounded-md text-slate-700 transition">Wastage Analytics</button>
+      <button (click)="setTab('database')" [class.bg-white]="activeTab() === 'database'" [class.shadow-sm]="activeTab() === 'database'" class="px-4 py-1.5 text-sm font-medium rounded-md text-slate-700 transition">Forecast DB</button>
+    </div>
   </div>
 
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-    @for (f of forecasts(); track f.itemId) {
-      <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm space-y-3">
-        <div class="flex justify-between items-start">
-          <h3 class="font-bold text-xs text-slate-900">{{ f.itemName }}</h3>
-          <span
-            class="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded"
-          >
-                {{ (f.confidenceScore * 100).toFixed(0) }}% score
-              </span>
+  <!-- ==================== SMART PLANNING ==================== -->
+  @if(activeTab() === 'planning') {
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      @for (f of smartPlans(); track f.itemId) {
+        <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-4 hover:shadow-md transition">
+          <div class="flex justify-between items-start border-b border-slate-100 pb-3">
+            <div>
+              <h3 class="font-bold text-base text-slate-900 leading-tight">{{ f.itemName }}</h3>
+              <p class="text-xs font-medium text-slate-400 uppercase tracking-wider">{{ f.forecastPeriod }} Forecast</p>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4 text-sm">
+            <div class="bg-slate-50 p-2 rounded border border-slate-100">
+              <p class="text-xs text-slate-500">Current Stock</p>
+              <p class="font-bold text-slate-800 text-lg">{{ f.currentStock }}</p>
+            </div>
+            <div class="bg-amber-50 p-2 rounded border border-amber-100">
+              <p class="text-xs text-amber-700">Threshold</p>
+              <p class="font-bold text-amber-800 text-lg">{{ f.reorderThreshold }}</p>
+            </div>
+            <div class="bg-indigo-50 p-2 rounded border border-indigo-100">
+              <p class="text-xs text-indigo-700">Predicted Demand</p>
+              <p class="font-bold text-indigo-800 text-lg">{{ f.predictedDemand }}</p>
+            </div>
+            <div class="bg-emerald-50 p-2 rounded border border-emerald-100">
+              <p class="text-xs text-emerald-700">Recommended Buy</p>
+              <p class="font-bold text-emerald-800 text-lg">{{ f.recommendedPurchase }}</p>
+            </div>
+          </div>
         </div>
-        <div class="space-y-1 text-xs text-slate-600">
-          <p>
-            Current: <strong class="text-slate-800">{{ f.currentStock }} units</strong>
-          </p>
-          <p>
-            Depletion In:
-            <strong class="text-rose-600">{{ f.predictedDepletionDays }} days</strong>
-          </p>
-          <p>
-            Suggested Order:
-            <strong class="text-indigo-600">{{ f.suggestedReorderQuantity }} units</strong>
-          </p>
+      } @empty {
+        <div class="col-span-full p-8 text-center border-2 border-dashed border-slate-200 rounded-xl">
+          <p class="text-sm text-slate-500">Processing algorithms. No inventory data found yet.</p>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- ==================== WASTAGE ==================== -->
+  @if(activeTab() === 'wastage') {
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+      <!-- Controls -->
+      <div class="space-y-6 lg:col-span-1">
+        <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-4">
+          <h3 class="font-bold text-slate-900 border-b border-slate-100 pb-2">Target Item Analysis</h3>
+          <select [(ngModel)]="wastageItemId" (ngModelChange)="onWastageItemChange()" class="w-full border rounded-lg p-2 bg-white text-sm focus:ring-2 focus:ring-indigo-600 outline-none">
+            <option [value]="0" disabled>Select Inventory Item...</option>
+            @for (i of inventoryItems(); track i.id) { <option [value]="i.id">{{ i.itemName }}</option> }
+          </select>
+
+          <div class="flex flex-col gap-2 pt-2">
+            <div class="bg-slate-50 border border-slate-200 rounded p-3 text-center">
+              <p class="text-xs text-slate-500 uppercase tracking-wider font-semibold">Total Quantity Lost</p>
+              <p class="text-xl font-bold text-rose-600">{{ totalWastageText() }}</p>
+            </div>
+            <div class="bg-slate-50 border border-slate-200 rounded p-3 text-center">
+              <p class="text-xs text-slate-500 uppercase tracking-wider font-semibold">Total Financial Loss</p>
+              <p class="text-xl font-bold text-rose-600">{{ wastageCostText() }}</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-4">
+          <h3 class="font-bold text-slate-900 border-b border-slate-100 pb-2">Record New Spoilage</h3>
+          <div class="space-y-3 text-sm">
+            <div>
+              <label class="block text-slate-600 mb-1 text-xs font-semibold">User ID <span class="text-rose-500">*</span></label>
+              <input type="number" [(ngModel)]="wastageForm.userId" class="w-full border rounded-lg p-2 outline-none focus:border-indigo-600">
+              <p class="text-[10px] text-slate-400 mt-0.5">ID must exist in DB to prevent 500 error.</p>
+            </div>
+            <div>
+              <label class="block text-slate-600 mb-1 text-xs font-semibold">Quantity Lost</label>
+              <input type="number" [(ngModel)]="wastageForm.quantity" class="w-full border rounded-lg p-2 outline-none focus:border-indigo-600">
+            </div>
+            <div>
+              <label class="block text-slate-600 mb-1 text-xs font-semibold">Reason / Remarks</label>
+              <input type="text" [(ngModel)]="wastageForm.reason" placeholder="e.g., Expired, Damaged" class="w-full border rounded-lg p-2 outline-none focus:border-indigo-600">
+            </div>
+            <button (click)="submitWastage()" [disabled]="!wastageItemId()" class="w-full py-2 bg-rose-600 text-white font-semibold rounded-lg hover:bg-rose-700 disabled:opacity-50 transition">Log Wastage</button>
+          </div>
         </div>
       </div>
-    }
-  </div>
+
+      <!-- Raw Text Report Area -->
+      <div class="lg:col-span-2 bg-slate-900 rounded-xl shadow-lg border border-slate-800 overflow-hidden flex flex-col">
+        <div class="bg-slate-800 px-4 py-2 flex items-center gap-2 border-b border-slate-700">
+          <div class="w-3 h-3 rounded-full bg-rose-500"></div>
+          <div class="w-3 h-3 rounded-full bg-amber-500"></div>
+          <div class="w-3 h-3 rounded-full bg-emerald-500"></div>
+          <span class="text-xs font-mono text-slate-400 ml-2">wastage_report.log</span>
+        </div>
+        <pre class="p-6 text-emerald-400 font-mono text-sm leading-relaxed overflow-auto flex-1">{{ wastageReport() }}</pre>
+      </div>
+
+    </div>
+  }
+
+  <!-- ==================== FORECAST DB ==================== -->
+  @if(activeTab() === 'database') {
+    <div class="space-y-4">
+      <div class="flex justify-end">
+        <button (click)="activeModal.set('create')" class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition shadow-sm">+ Run New Forecast</button>
+      </div>
+
+      <div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+        <table class="w-full text-left border-collapse text-xs">
+          <thead class="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold uppercase tracking-wider">
+          <tr>
+            <th class="py-3 px-4">Forecast ID</th>
+            <th class="py-3 px-4">Item Target</th>
+            <th class="py-3 px-4">Period</th>
+            <th class="py-3 px-4">Calculation Date</th>
+            <th class="py-3 px-4 text-right">Predicted Demand</th>
+            <th class="py-3 px-4 text-center">Action</th>
+          </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            @for (row of forecastDbRows(); track row.id) {
+              <tr class="hover:bg-slate-50 transition">
+                <td class="py-3 px-4 font-mono text-slate-500">#FC-{{ row.id }}</td>
+                <td class="py-3 px-4 font-semibold text-slate-900">{{ row.itemName }}</td>
+                <td class="py-3 px-4"><span class="bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded">{{ row.period }}</span></td>
+                <td class="py-3 px-4 text-slate-500">{{ row.date }}</td>
+                <td class="py-3 px-4 text-right font-bold text-slate-800">{{ row.predictedDemand }}</td>
+                <td class="py-3 px-4 text-center"><button (click)="deleteForecast(row.id)" class="text-rose-500 hover:underline">Delete</button></td>
+              </tr>
+            } @empty {
+              <tr><td colspan="6" class="p-8 text-center text-slate-400">No forecasts persisted in database.</td></tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+
+  <!-- Modal for Creating Forecast -->
+  @if (activeModal() === 'create') {
+    <div class="fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-sm" (click)="activeModal.set('none')"></div>
+    <div class="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
+      <div class="bg-white w-full max-w-sm rounded-xl shadow-2xl p-6 pointer-events-auto border border-slate-200 space-y-4">
+        <h2 class="text-lg font-bold text-slate-900">Run Algorithm</h2>
+
+        <div class="space-y-3 text-sm">
+          <div>
+            <label class="block font-medium text-slate-700 mb-1">Target Item</label>
+            <select [(ngModel)]="newForecast.itemId" class="w-full border rounded-lg p-2 focus:ring-2 focus:ring-indigo-600 outline-none bg-white">
+              <option [value]="0" disabled>Select Item</option>
+              @for (i of inventoryItems(); track i.id) { <option [value]="i.id">{{ i.itemName }}</option> }
+            </select>
+          </div>
+          <div>
+            <label class="block font-medium text-slate-700 mb-1">Calculation Period</label>
+            <select [(ngModel)]="newForecast.period" class="w-full border rounded-lg p-2 focus:ring-2 focus:ring-indigo-600 outline-none bg-white">
+              <option value="Daily">Daily</option>
+              <option value="Weekly">Weekly</option>
+              <option value="Monthly">Monthly</option>
+              <option value="Quarterly">Quarterly</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="flex gap-2 pt-2">
+          <button (click)="activeModal.set('none')" class="flex-1 py-2 border rounded-lg text-slate-600 font-medium hover:bg-slate-50">Cancel</button>
+          <button (click)="submitForecast()" [disabled]="!newForecast.itemId" class="flex-1 py-2 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 disabled:opacity-50">Generate</button>
+        </div>
+      </div>
+    </div>
+  }
+
 </div>

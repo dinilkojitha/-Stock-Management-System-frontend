@@ -1,35 +1,199 @@
-<div class="space-y-6">
-  <div>
-    <h1 class="text-xl font-bold text-slate-900">Internal Consumptions</h1>
-    <p class="text-xs text-slate-500">Internal requests and department allocations.</p>
+<div class="space-y-6 max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
+
+  <!-- Header & Tabs -->
+  <div class="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 border-b border-slate-200 pb-4">
+    <div>
+      <h1 class="text-2xl font-bold tracking-tight text-slate-900">Internal Distribution</h1>
+      <p class="text-xs text-slate-500">Manage department requests, stock allocations, and consumption logs.</p>
+    </div>
+
+    <div class="flex bg-slate-100 p-1 rounded-lg">
+      <button (click)="setTab('requests')" [class.bg-white]="activeTab() === 'requests'" [class.shadow-sm]="activeTab() === 'requests'" class="px-4 py-1.5 text-sm font-medium rounded-md text-slate-700 transition">Internal Requests</button>
+      <button (click)="setTab('consumptions')" [class.bg-white]="activeTab() === 'consumptions'" [class.shadow-sm]="activeTab() === 'consumptions'" class="px-4 py-1.5 text-sm font-medium rounded-md text-slate-700 transition">Consumption Logs</button>
+    </div>
   </div>
 
-  <div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-    <table class="w-full text-left border-collapse text-xs">
-      <thead class="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold">
-      <tr>
-        <th class="py-3 px-4">Request #</th>
-        <th class="py-3 px-4">Department</th>
-        <th class="py-3 px-4">Date</th>
-        <th class="py-3 px-4">Status</th>
-        <th class="py-3 px-4 text-right">Value</th>
-      </tr>
-      </thead>
-      <tbody class="divide-y divide-slate-100">
-        @for (c of consumptions(); track c.id) {
-          <tr class="hover:bg-slate-50 transition">
-            <td class="py-3 px-4 font-mono font-medium">{{ c.requestNumber }}</td>
-            <td class="py-3 px-4">{{ c.departmentName }}</td>
-            <td class="py-3 px-4 text-slate-500">{{ c.date }}</td>
-            <td class="py-3 px-4">
-                  <span class="px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 font-medium">{{
-                      c.status
-                    }}</span>
-            </td>
-            <td class="py-3 px-4 text-right font-medium">${{ c.totalCost.toFixed(2) }}</td>
+  <!-- ==================== REQUESTS TAB ==================== -->
+  @if (activeTab() === 'requests') {
+    <div class="space-y-4">
+      <div class="flex justify-end">
+        <button (click)="activeModal.set('request')" class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition shadow-sm">+ New Request</button>
+      </div>
+
+      <div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+        <table class="w-full text-left border-collapse text-xs">
+          <thead class="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold uppercase tracking-wider">
+          <tr>
+            <th class="py-3 px-4">Req ID</th>
+            <th class="py-3 px-4">Department</th>
+            <th class="py-3 px-4">Date</th>
+            <th class="py-3 px-4">Emergency</th>
+            <th class="py-3 px-4">Status</th>
+            <th class="py-3 px-4 text-center">Actions</th>
           </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            @for (req of requests(); track req.id) {
+              <tr class="hover:bg-slate-50 transition">
+                <td class="py-3 px-4 font-mono font-medium">#REQ-{{ req.id }}</td>
+                <td class="py-3 px-4 font-semibold text-slate-900">{{ req.department?.departmentName || 'Unknown' }}</td>
+                <td class="py-3 px-4 text-slate-500">{{ req.requestedAt | date:'medium' }}</td>
+                <td class="py-3 px-4">
+                  @if(req.emergencyRequest) { <span class="text-rose-600 font-bold">Yes</span> } @else { <span class="text-slate-400">No</span> }
+                </td>
+                <td class="py-3 px-4">
+                  <span class="px-2 py-0.5 rounded text-xs font-bold"
+                        [ngClass]="{'bg-emerald-100 text-emerald-700': req.status === 'COMPLETED', 'bg-amber-100 text-amber-700': req.status === 'PENDING'}">
+                    {{ req.status }}
+                  </span>
+                </td>
+                <td class="py-3 px-4 text-center space-x-3">
+                  <button (click)="openAllocateModal(req)" class="text-indigo-600 hover:underline font-medium">Allocate</button>
+                  <button (click)="openConsumeModal(req)" class="text-emerald-600 hover:underline font-medium">Consume</button>
+                  <button (click)="deleteRequest(req.id)" class="text-rose-500 hover:underline">Delete</button>
+                </td>
+              </tr>
+            } @empty {
+              <tr><td colspan="6" class="p-8 text-center text-slate-400">No requests found.</td></tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+
+  <!-- ==================== CONSUMPTIONS TAB ==================== -->
+  @if (activeTab() === 'consumptions') {
+    <div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm mt-4">
+      <table class="w-full text-left border-collapse text-xs">
+        <thead class="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold uppercase tracking-wider">
+        <tr>
+          <th class="py-3 px-4">Log ID</th>
+          <th class="py-3 px-4">Req Ref</th>
+          <th class="py-3 px-4">Department</th>
+          <th class="py-3 px-4">Item Name</th>
+          <th class="py-3 px-4 text-center">Allocated</th>
+          <th class="py-3 px-4 text-center">Consumed</th>
+          <th class="py-3 px-4">Consumed At</th>
+        </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          @for (c of consumptions(); track c.consumptionId) {
+            <tr class="hover:bg-slate-50 transition">
+              <td class="py-3 px-4 font-mono text-slate-500">#LOG-{{ c.consumptionId }}</td>
+              <td class="py-3 px-4 font-medium">#REQ-{{ c.requestId }}</td>
+              <td class="py-3 px-4 font-semibold text-slate-900">{{ getDeptName(c.departmentId) }}</td>
+              <td class="py-3 px-4">{{ getItemName(c.itemId) }}</td>
+              <td class="py-3 px-4 text-center text-slate-500">{{ c.allocatedQuantity }}</td>
+              <td class="py-3 px-4 text-center font-bold text-indigo-600">{{ c.quantityConsumed }}</td>
+              <td class="py-3 px-4 text-slate-500">{{ c.consumedAt | date:'medium' }}</td>
+            </tr>
+          } @empty {
+            <tr><td colspan="7" class="p-8 text-center text-slate-400">No consumption logs found.</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+  <!-- ==================== MODALS ==================== -->
+  @if (activeModal() !== 'none') {
+    <div class="fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-sm" (click)="activeModal.set('none')"></div>
+  }
+
+  <!-- Slide Over Form Modal -->
+  @if (activeModal() !== 'none') {
+    <div class="fixed inset-y-0 right-0 z-50 w-full max-w-md bg-white shadow-2xl border-l border-slate-200 flex flex-col">
+      <div class="p-6 border-b border-slate-100 flex justify-between items-center">
+        <h2 class="text-lg font-bold text-slate-900">
+          @if(activeModal() === 'request') { Create Internal Request }
+          @if(activeModal() === 'allocate') { Allocate Stock }
+          @if(activeModal() === 'consume') { Log Consumption }
+        </h2>
+        <button (click)="activeModal.set('none')" class="text-slate-400 hover:text-slate-600 text-xl">✕</button>
+      </div>
+
+      <div class="p-6 overflow-y-auto flex-1 text-sm space-y-5">
+
+        <!-- NEW REQUEST FORM -->
+        @if (activeModal() === 'request') {
+          <div>
+            <label class="block font-medium text-slate-700 mb-1">Department</label>
+            <select [(ngModel)]="newRequest.departmentId" class="w-full border rounded-lg p-2 bg-white">
+              <option value="0" disabled>Select Department</option>
+              @for (d of departments(); track d.id) { <option [value]="d.id">{{ d.departmentName }}</option> }
+            </select>
+          </div>
+          <div class="flex items-center gap-2">
+            <input type="checkbox" [(ngModel)]="newRequest.emergencyRequest" id="emergency">
+            <label for="emergency" class="font-medium text-rose-600">Mark as Emergency Request</label>
+          </div>
+          <hr>
+          <div class="bg-slate-50 p-3 rounded-lg border border-slate-200 space-y-3">
+            <h3 class="font-bold text-slate-700">Add Items</h3>
+            <div class="flex gap-2">
+              <select [(ngModel)]="requestItem.itemId" class="border rounded p-1.5 flex-1 bg-white">
+                <option value="0" disabled>Select Item</option>
+                @for (i of inventoryItems(); track i.id) { <option [value]="i.id">{{ i.itemName }}</option> }
+              </select>
+              <input type="number" placeholder="Qty" [(ngModel)]="requestItem.quantity" class="border rounded p-1.5 w-20 text-center">
+              <button (click)="addRequestItem()" class="bg-indigo-600 text-white rounded px-3 hover:bg-indigo-700">+</button>
+            </div>
+          </div>
+          @if(newRequest.items.length > 0) {
+            <ul class="text-xs space-y-1 mt-2">
+              @for(i of newRequest.items; track $index) {
+                <li class="flex justify-between bg-slate-100 p-2 rounded text-slate-700 border border-slate-200">
+                  <span>{{ getItemName(i.itemId) }}</span> <span class="font-bold">x{{ i.quantity }}</span>
+                </li>
+              }
+            </ul>
+          }
         }
-      </tbody>
-    </table>
-  </div>
+
+        <!-- ALLOCATE STOCK FORM -->
+        @if (activeModal() === 'allocate') {
+          <div class="bg-indigo-50 p-3 rounded text-indigo-900 border border-indigo-100 mb-4">
+            Allocating for Request <b>#REQ-{{ selectedRequest?.id }}</b>
+          </div>
+          @for (item of allocationForm.items; track $index) {
+            <div class="flex gap-2 mb-2">
+              <select [(ngModel)]="item.itemId" class="border rounded p-2 flex-1 bg-white">
+                <option value="0" disabled>Select Item</option>
+                @for (i of inventoryItems(); track i.id) { <option [value]="i.id">{{ i.itemName }}</option> }
+              </select>
+              <input type="number" placeholder="Qty" [(ngModel)]="item.quantity" class="border rounded p-2 w-24 text-center">
+            </div>
+          }
+          <button (click)="addAllocationItem()" class="text-indigo-600 font-medium hover:underline text-xs">+ Add Another Item to Allocate</button>
+        }
+
+        <!-- LOG CONSUMPTION FORM -->
+        @if (activeModal() === 'consume') {
+          <div class="bg-emerald-50 p-3 rounded text-emerald-900 border border-emerald-100 mb-4">
+            Logging Consumption for <b>#REQ-{{ selectedRequest?.id }}</b>
+          </div>
+          @for (item of consumptionForm.items; track $index) {
+            <div class="flex gap-2 mb-2">
+              <select [(ngModel)]="item.itemId" class="border rounded p-2 flex-1 bg-white">
+                <option value="0" disabled>Select Item</option>
+                @for (i of inventoryItems(); track i.id) { <option [value]="i.id">{{ i.itemName }}</option> }
+              </select>
+              <input type="number" placeholder="Qty Used" [(ngModel)]="item.quantityConsumed" class="border rounded p-2 w-24 text-center">
+            </div>
+          }
+          <button (click)="addConsumptionItem()" class="text-emerald-600 font-medium hover:underline text-xs">+ Add Another Consumed Item</button>
+        }
+
+      </div>
+      <div class="p-6 border-t border-slate-100 bg-slate-50 flex gap-2">
+        <button (click)="activeModal.set('none')" class="flex-1 py-2 bg-white border border-slate-300 rounded-lg font-medium text-slate-700">Cancel</button>
+
+        @if(activeModal() === 'request') { <button (click)="submitRequest()" [disabled]="newRequest.items.length === 0" class="flex-1 py-2 bg-indigo-600 disabled:opacity-50 text-white rounded-lg font-medium">Save Request</button> }
+        @if(activeModal() === 'allocate') { <button (click)="submitAllocation()" class="flex-1 py-2 bg-indigo-600 text-white rounded-lg font-medium">Confirm Allocation</button> }
+        @if(activeModal() === 'consume') { <button (click)="submitConsumption()" class="flex-1 py-2 bg-emerald-600 text-white rounded-lg font-medium">Log Consumption</button> }
+      </div>
+    </div>
+  }
+
 </div>

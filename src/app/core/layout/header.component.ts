@@ -12,7 +12,7 @@ import { AuthService } from '../services/auth.service';
       </div>
       <div class="flex items-center gap-4">
         <div class="text-right">
-          <p class="text-xs font-bold text-slate-800">{{ auth.session()?.username || 'Admin' }}</p>
+          <p class="text-xs font-bold text-slate-800">{{ auth.session()?.role || 'Admin' }}</p>
           <p class="text-[10px] text-slate-400">{{ auth.session()?.role || 'ROLE_ADMIN' }}</p>
         </div>
         <button

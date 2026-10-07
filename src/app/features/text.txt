@@ -1,0 +1,24 @@
+category
+:
+{categoryId: 3, description: 'Apparel, shoes, and fashion accessories', hibernateLazyInitializer: {…}, name: 'Clothing'}
+description
+:
+"Primium"
+id
+:
+4
+itemName
+:
+"underware "
+reorderThreshold
+:
+10
+totalQuantity
+:
+100
+unitPrice
+:
+5
+unitType
+:
+{hibernateLazyInitializer: {…}, name: 'Kilogram', unitTypeId: 1}

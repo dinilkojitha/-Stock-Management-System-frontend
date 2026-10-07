@@ -33,9 +33,9 @@ export class Inventory implements OnInit {
     if (!q) return this.items();
     return this.items().filter(
       (item) =>
-        item.name.toLowerCase().includes(q) ||
-        item.sku.toLowerCase().includes(q) ||
-        item.category.categoryName.toLowerCase().includes(q),
+        item.itemName.toLowerCase().includes(q) ||
+        item.description.toLowerCase().includes(q) ||
+        item.category.name.toLowerCase().includes(q),
     );
   });
 
@@ -50,12 +50,14 @@ export class Inventory implements OnInit {
     });
 
     this.api.getCategories().subscribe({
-      next: (data) => this.categories.set(data),
+      next: (data) => {this.categories.set(data)
+      console.log(data)},
       error: () => console.error('Failed to load categories'),
     });
 
     this.api.getUnitTypes().subscribe({
-      next: (data) => this.unitTypes.set(data),
+      next: (data) => {this.unitTypes.set(data)
+      console.log(data)},
       error: () => console.error('Failed to load unit types'),
     });
   }
@@ -63,16 +65,16 @@ export class Inventory implements OnInit {
   openCreateModal() {
     this.isEditing.set(false);
     this.currentItem.set(this.getEmptyItem());
-    this.selectedCategoryId.set(this.categories()[0]?.id ?? null);
-    this.selectedUnitTypeId.set(this.unitTypes()[0]?.id ?? null);
+    this.selectedCategoryId.set(this.categories()[0]?.categoryId ?? null);
+    this.selectedUnitTypeId.set(this.unitTypes()[0]?.unitTypeId ?? null);
     this.isDrawerOpen.set(true);
   }
 
   openEditModal(item: InventoryItem) {
     this.isEditing.set(true);
     this.currentItem.set({ ...item });
-    this.selectedCategoryId.set(item.category.id ?? null);
-    this.selectedUnitTypeId.set(item.unitType.id ?? null);
+    this.selectedCategoryId.set(item.category.categoryId ?? null);
+    this.selectedUnitTypeId.set(item.unitType.unitTypeId ?? null);
     this.isDrawerOpen.set(true);
   }
 
@@ -81,9 +83,11 @@ export class Inventory implements OnInit {
   }
 
   saveItem() {
-    const cat = this.categories().find((c) => c.id === Number(this.selectedCategoryId()));
-    const unit = this.unitTypes().find((u) => u.id === Number(this.selectedUnitTypeId()));
+    const cat = this.categories().find((c) => c.categoryId === Number(this.selectedCategoryId()));
+    const unit = this.unitTypes().find((u) => u.unitTypeId === Number(this.selectedUnitTypeId()));
 
+    console.log('Selected Category:', cat);
+    console.log('Selected Unit Type:', unit);
     if (!cat || !unit) {
       alert('Please select both a category and a unit type.');
       return;
@@ -93,6 +97,7 @@ export class Inventory implements OnInit {
       ...this.currentItem(),
       category: cat,
       unitType: unit,
+      itemName: this.currentItem().itemName, // Assuming itemName is derived from name
     };
 
     if (this.isEditing() && payload.id) {
@@ -118,19 +123,22 @@ export class Inventory implements OnInit {
     if (!id || !confirm('Are you sure you want to delete this inventory item?')) return;
 
     this.api.deleteInventoryItem(id).subscribe({
-      next: () => this.items.update((prev) => prev.filter((i) => i.id !== id)),
+      next: (val) => {
+        alert(val);
+        this.items.update((prev) => prev.filter((i) => i.id !== id))},
       error: (err) => alert(err?.error?.message || 'Failed to delete item'),
     });
   }
 
   private getEmptyItem(): InventoryItem {
     return {
-      sku: '',
-      name: '',
-      reorderLevel: 0,
+      totalQuantity: 0,
+      itemName: '',
+      description: '',
+      reorderThreshold: 0,
       unitPrice: 0,
-      category: { categoryName: '' },
-      unitType: { unit: '' },
+      category: { name: '' },
+      unitType: { name: '' },
     };
   }
 }

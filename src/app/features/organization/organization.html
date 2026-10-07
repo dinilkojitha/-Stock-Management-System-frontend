@@ -1,25 +1,87 @@
-<div class="space-y-6">
-  <div>
-    <h1 class="text-xl font-bold text-slate-900">Branch Entities</h1>
-    <p class="text-xs text-slate-500">Corporate branch hierarchy and network nodes.</p>
+<div class="space-y-10 p-6 max-w-7xl mx-auto">
+
+  <!-- Branches Section -->
+  <div class="space-y-6">
+    <div class="flex flex-col xl:flex-row justify-between xl:items-end gap-4">
+      <div>
+        <h1 class="text-2xl font-bold tracking-tight text-slate-900">Branch Entities</h1>
+        <p class="text-xs text-slate-500">Corporate branch hierarchy and network nodes.</p>
+      </div>
+
+      <!-- Quick Create Form -->
+      <div class="flex flex-wrap gap-2 items-center">
+        <input [(ngModel)]="newBranch.branchName" placeholder="Branch Name" class="border border-slate-300 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-slate-900 focus:outline-none">
+        <input [(ngModel)]="newBranch.location" placeholder="Location" class="border border-slate-300 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-slate-900 focus:outline-none">
+        <button (click)="createBranch()" class="bg-slate-900 text-white px-4 py-1.5 rounded-lg text-sm font-semibold hover:bg-slate-800 transition shadow-sm">Add Branch</button>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      @for (b of branches(); track b.id) {
+        <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-3 hover:shadow-md transition">
+          <div class="flex justify-between items-start">
+            <span class="text-xs font-mono font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
+              ID: {{ b.id }}
+            </span>
+            <button (click)="deleteBranch(b.id)" class="text-xs font-medium text-rose-600 hover:text-rose-800 hover:underline">Delete</button>
+          </div>
+          <div>
+            <h3 class="font-bold text-base text-slate-900">{{ b.name }}</h3>
+            <p class="text-sm text-slate-500">{{ b.location }} Facility</p>
+          </div>
+        </div>
+      } @empty {
+        <div class="col-span-1 md:col-span-3 p-8 text-center border-2 border-dashed border-slate-200 rounded-xl">
+          <p class="text-sm text-slate-500">No branches found.</p>
+        </div>
+      }
+    </div>
   </div>
 
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-    @for (b of branches(); track b.id) {
-      <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm space-y-2">
-        <div class="flex justify-between items-start">
-              <span
-                class="text-xs font-mono font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded"
-              >{{ b.code }}</span
-              >
-          <span
-            class="h-2 w-2 rounded-full"
-            [ngClass]="b.active ? 'bg-emerald-500' : 'bg-slate-300'"
-          ></span>
-        </div>
-        <h3 class="font-bold text-sm text-slate-900">{{ b.name }}</h3>
-        <p class="text-xs text-slate-500">{{ b.city }} Facility</p>
+  <hr class="border-slate-200">
+
+  <!-- Departments Section -->
+  <div class="space-y-6">
+    <div class="flex flex-col xl:flex-row justify-between xl:items-end gap-4">
+      <div>
+        <h1 class="text-2xl font-bold tracking-tight text-slate-900">Departments</h1>
+        <p class="text-xs text-slate-500">Operational divisions mapped to branches.</p>
       </div>
-    }
+
+      <!-- Quick Create Form -->
+      <div class="flex flex-wrap gap-2 items-center">
+        <input [(ngModel)]="newDept.departmentName" placeholder="Dept Name" class="border border-slate-300 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-slate-900 focus:outline-none">
+        <input [(ngModel)]="newDept.location" placeholder="Location" class="border border-slate-300 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-slate-900 focus:outline-none">
+        <select [(ngModel)]="newDept.branchId" class="text-black border border-slate-300 rounded-lg px-3 py-1.5 text-sm bg-white focus:ring-2 focus:ring-slate-900 focus:outline-none">
+          <option [value]="0" disabled>Select Branch</option>
+          @for (b of branches(); track b.id) {
+            <option [value]="b.id">{{ b.branchName}}</option>
+          }
+        </select>
+        <button (click)="createDepartment()" class="bg-slate-900 text-white px-4 py-1.5 rounded-lg text-sm font-semibold hover:bg-slate-800 transition shadow-sm">Add Dept</button>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      @for (d of departments(); track d.id) {
+        <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-3 hover:shadow-md transition">
+          <div class="flex justify-between items-start">
+            <span class="text-xs font-mono font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
+              {{ d.branchName }}
+            </span>
+            <button (click)="deleteDepartment(d.id)" class="text-xs font-medium text-rose-600 hover:text-rose-800 hover:underline">Delete</button>
+          </div>
+          <div>
+            <h3 class="font-bold text-base text-slate-900">{{ d.departmentName }}</h3>
+            <p class="text-sm text-slate-500">{{ d.location }}</p>
+          </div>
+        </div>
+      } @empty {
+        <div class="col-span-1 md:col-span-3 p-8 text-center border-2 border-dashed border-slate-200 rounded-xl">
+          <p class="text-sm text-slate-500">No departments found.</p>
+        </div>
+      }
+    </div>
   </div>
+
 </div>
