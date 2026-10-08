@@ -21,11 +21,15 @@
       </div>
 
       <div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+        @if (requestsError()) {
+          <p role="alert" class="border-b border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">{{ requestsError() }}</p>
+        }
         <table class="w-full text-left border-collapse text-xs">
           <thead class="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold uppercase tracking-wider">
           <tr>
             <th class="py-3 px-4">Req ID</th>
             <th class="py-3 px-4">Department</th>
+            <th class="py-3 px-4">Requested Items</th>
             <th class="py-3 px-4">Date</th>
             <th class="py-3 px-4">Emergency</th>
             <th class="py-3 px-4">Status</th>
@@ -37,24 +41,47 @@
               <tr class="hover:bg-slate-50 transition">
                 <td class="py-3 px-4 font-mono font-medium">#REQ-{{ req.id }}</td>
                 <td class="py-3 px-4 font-semibold text-slate-900">{{ req.department?.departmentName || req.department?.name || 'Unknown' }}</td>
+                <td class="py-3 px-4">
+                  @if (getRequestItems(req.id).length > 0) {
+                    <ul class="space-y-1">
+                      @for (item of getRequestItems(req.id); track item.id.itemId) {
+                        <li class="flex flex-wrap items-center gap-x-2">
+                          <span class="font-medium text-slate-800">{{ item.item?.itemName || getItemName(item.id.itemId) }}</span>
+                          <span class="text-slate-500">Requested: {{ item.quantity }}</span>
+                          <span class="text-indigo-600">Allocated: {{ item.allocatedQuantity || 0 }}</span>
+                        </li>
+                      }
+                    </ul>
+                  } @else {
+                    <span class="text-slate-400">No items</span>
+                  }
+                </td>
                 <td class="py-3 px-4 text-slate-500">{{ req.requestedAt | date:'medium' }}</td>
                 <td class="py-3 px-4">
                   @if(req.emergencyRequest) { <span class="text-rose-600 font-bold">Yes</span> } @else { <span class="text-slate-400">No</span> }
                 </td>
                 <td class="py-3 px-4">
                   <span class="px-2 py-0.5 rounded text-xs font-bold"
-                        [ngClass]="{'bg-emerald-100 text-emerald-700': req.status === 'COMPLETED', 'bg-amber-100 text-amber-700': req.status === 'PENDING'}">
-                    {{ req.status }}
+                        [ngClass]="{
+                          'bg-emerald-100 text-emerald-700': getRequestStatus(req) === 'COMPLETED',
+                          'bg-indigo-100 text-indigo-700': getRequestStatus(req) === 'ALLOCATED',
+                          'bg-amber-100 text-amber-700': getRequestStatus(req) === 'PENDING'
+                        }">
+                    {{ getRequestStatus(req) }}
                   </span>
                 </td>
                 <td class="py-3 px-4 text-center space-x-3">
-                  <button (click)="openAllocateModal(req)" class="text-indigo-600 hover:underline font-medium">Allocate</button>
-                  <button (click)="openConsumeModal(req)" class="text-emerald-600 hover:underline font-medium">Consume</button>
-                  <button (click)="deleteRequest(req.id)" class="text-rose-500 hover:underline font-medium">Delete</button>
+                  @if (!hasAllocation(req.id)) {
+                    <button (click)="openAllocateModal(req)" class="text-indigo-600 hover:underline font-medium">Allocate</button>
+                    <button (click)="deleteRequest(req.id)" class="text-rose-500 hover:underline font-medium">Delete</button>
+                  }
+                  @if (canConsume(req.id)) {
+                    <button (click)="openConsumeModal(req)" class="text-emerald-600 hover:underline font-medium">Consume</button>
+                  }
                 </td>
               </tr>
             } @empty {
-              <tr><td colspan="6" class="p-8 text-center text-slate-400">No requests found.</td></tr>
+              <tr><td colspan="7" class="p-8 text-center text-slate-400">No requests found.</td></tr>
             }
           </tbody>
         </table>
@@ -162,16 +189,22 @@
           <div class="bg-indigo-50 p-3 rounded text-indigo-900 border border-indigo-100 mb-4">
             Allocating for Request <b>#REQ-{{ selectedRequest?.id }}</b>
           </div>
-          @for (item of allocationForm.items; track $index) {
-            <div class="flex gap-2 mb-2">
-              <select [(ngModel)]="item.itemId" class="border rounded p-2 flex-1 bg-white outline-none">
-                <option value="0" disabled>Select Item</option>
-                @for (i of inventoryItems(); track i.id) { <option [value]="i.id">{{ i.itemName }}</option> }
-              </select>
-              <input type="number" placeholder="Qty" [(ngModel)]="item.quantity" class="border rounded p-2 w-24 text-center outline-none">
+          @if (modalLoading()) {
+            <p class="text-sm text-slate-500">Loading request items...</p>
+          }
+          @for (item of allocationItems(); track item.itemId) {
+            <div class="mb-3 rounded-lg border border-slate-200 p-3">
+              <label class="mb-1 block font-medium text-slate-700">{{ item.itemName }}</label>
+              <div class="flex justify-between text-sm">
+                <span class="text-slate-500">Requested quantity</span>
+                <span class="font-semibold text-slate-800">{{ item.requestedQuantity }}</span>
+              </div>
+              <div class="mt-1 flex justify-between text-sm">
+                <span class="text-indigo-600">Quantity to allocate</span>
+                <span class="font-semibold text-indigo-700">{{ item.quantityToAllocate }}</span>
+              </div>
             </div>
           }
-          <button (click)="addAllocationItem()" class="text-indigo-600 font-medium hover:underline text-xs">+ Add Another Item to Allocate</button>
         }
 
         <!-- LOG CONSUMPTION FORM -->
@@ -179,16 +212,24 @@
           <div class="bg-emerald-50 p-3 rounded text-emerald-900 border border-emerald-100 mb-4">
             Logging Consumption for <b>#REQ-{{ selectedRequest?.id }}</b>
           </div>
-          @for (item of consumptionForm.items; track $index) {
-            <div class="flex gap-2 mb-2">
-              <select [(ngModel)]="item.itemId" class="border rounded p-2 flex-1 bg-white outline-none">
-                <option value="0" disabled>Select Item</option>
-                @for (i of inventoryItems(); track i.id) { <option [value]="i.id">{{ i.itemName }}</option> }
-              </select>
-              <input type="number" placeholder="Qty Used" [(ngModel)]="item.quantityConsumed" class="border rounded p-2 w-24 text-center outline-none">
+          @if (modalLoading()) {
+            <p class="text-sm text-slate-500">Loading allocated items...</p>
+          }
+          @for (item of consumptionForm.items; track item.itemId) {
+            <div class="mb-3 rounded-lg border border-slate-200 p-3">
+              <label class="mb-1 block font-medium text-slate-700">{{ getItemName(item.itemId) }}</label>
+              <div class="mb-2 flex justify-between text-xs">
+                <span class="text-slate-500">Remaining allocated quantity</span>
+                <span class="font-semibold text-emerald-700">{{ consumptionLimits()[item.itemId] }}</span>
+              </div>
+              <label class="mb-1 block text-xs text-slate-500">Quantity consumed</label>
+              <input type="number" min="0" [max]="consumptionLimits()[item.itemId]" step="any" [(ngModel)]="item.quantityConsumed" class="w-full rounded border p-2 outline-none">
             </div>
           }
-          <button (click)="addConsumptionItem()" class="text-emerald-600 font-medium hover:underline text-xs">+ Add Another Consumed Item</button>
+        }
+
+        @if (modalError()) {
+          <p role="alert" class="rounded border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">{{ modalError() }}</p>
         }
 
       </div>
@@ -196,8 +237,8 @@
         <button (click)="activeModal.set('none')" class="flex-1 py-2 bg-white border border-slate-300 rounded-lg font-medium text-slate-700 hover:bg-slate-100 transition">Cancel</button>
 
         @if(activeModal() === 'request') { <button (click)="submitRequest()" [disabled]="newRequest.items.length === 0" class="flex-1 py-2 bg-indigo-600 disabled:opacity-50 text-white rounded-lg font-medium transition">Save Request</button> }
-        @if(activeModal() === 'allocate') { <button (click)="submitAllocation()" class="flex-1 py-2 bg-indigo-600 text-white rounded-lg font-medium transition">Confirm Allocation</button> }
-        @if(activeModal() === 'consume') { <button (click)="submitConsumption()" class="flex-1 py-2 bg-emerald-600 text-white rounded-lg font-medium transition">Log Consumption</button> }
+        @if(activeModal() === 'allocate') { <button (click)="submitAllocation()" [disabled]="modalLoading() || allocationForm.items.length === 0" class="flex-1 py-2 bg-indigo-600 text-white rounded-lg font-medium transition disabled:opacity-50">Confirm Allocation</button> }
+        @if(activeModal() === 'consume') { <button (click)="submitConsumption()" [disabled]="modalLoading() || consumptionForm.items.length === 0" class="flex-1 py-2 bg-emerald-600 text-white rounded-lg font-medium transition disabled:opacity-50">Log Consumption</button> }
       </div>
     </div>
   }
