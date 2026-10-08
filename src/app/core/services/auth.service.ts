@@ -24,7 +24,7 @@ export interface AuthSession {
   email: string;
   phoneNumber: string | null;
   role: Role;
-  department: Department;
+  department: Department | null;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -45,8 +45,9 @@ export class AuthService {
       'organization',
       'forecasting',
       'audit',
+      'reports',
     ],
-    MANAGER: ['dashboard', 'inventory', 'stock', 'distribution', 'procurement', 'forecasting'],
+    MANAGER: ['dashboard', 'inventory', 'stock', 'distribution', 'procurement', 'forecasting', 'reports'],
     STAFF: ['dashboard', 'inventory', 'stock', 'distribution'],
 
   };
@@ -98,8 +99,7 @@ export class AuthService {
       typeof role === 'object' &&
       role !== null &&
       typeof (role as Record<string, unknown>)['name'] === 'string' &&
-      typeof department === 'object' &&
-      department !== null
+      (department === null || (typeof department === 'object' && department !== null))
     );
   }
 
