@@ -8,6 +8,7 @@ import {
   InventoryItem,
   PlanningRecommendation,
   ParsedForecastDbRow,
+  BranchResponse,
 } from '../../models/domain.models';
 
 @Component({
@@ -24,9 +25,14 @@ export class Forecasting implements OnInit {
   // UI State
   activeTab = signal<'planning' | 'wastage' | 'database'>('planning');
   inventoryItems = signal<InventoryItem[]>([]);
+  branches = signal<BranchResponse[]>([]);
 
   // Tab 1: Smart Planning
   smartPlans = signal<PlanningRecommendation[]>([]);
+  selectedBranchId = signal<number | null>(null);
+  planningLoading = signal(false);
+  planningError = signal('');
+  private planningRequestId = 0;
 
   // Tab 2: Wastage
   wastageItemId = signal<number>(0);
@@ -41,9 +47,24 @@ export class Forecasting implements OnInit {
   newForecast = { itemId: 0, period: 'Monthly' };
 
   ngOnInit() {
-    this.api.getInventory().subscribe((items) => {
-      this.inventoryItems.set(items);
-      this.loadSmartPlans(items);
+    forkJoin({
+      items: this.api.getInventory(),
+      branches: this.api.getAllBranches(),
+    }).subscribe({
+      next: ({ items, branches }) => {
+        this.inventoryItems.set(items);
+        this.branches.set(branches);
+        const firstBranch = branches[0];
+        if (!firstBranch) {
+          this.planningError.set('No branches are available for branch-specific planning.');
+          return;
+        }
+        this.selectedBranchId.set(firstBranch.id);
+        this.loadSmartPlans(items, firstBranch.id);
+      },
+      error: (err) => {
+        this.planningError.set(`Could not load inventory and branches: ${err.message}`);
+      },
     });
   }
 
@@ -53,23 +74,44 @@ export class Forecasting implements OnInit {
   }
 
   // --- 1. Smart Planning ---
-  loadSmartPlans(items: InventoryItem[]) {
-    if (items.length === 0) return;
+  onPlanningBranchChange(branchId: number) {
+    this.selectedBranchId.set(Number(branchId));
+    this.loadSmartPlans(this.inventoryItems(), Number(branchId));
+  }
 
-    // Fetch the text-based planning recommendation for each item simultaneously
-    const requests = items.map((item) => this.api.getPlanningRecommendation(item.id!, 'Monthly'));
+  loadSmartPlans(items: InventoryItem[], branchId: number) {
+    const requestId = ++this.planningRequestId;
+    this.planningError.set('');
+    this.smartPlans.set([]);
+    if (items.length === 0) {
+      this.planningLoading.set(false);
+      return;
+    }
+    this.planningLoading.set(true);
 
+    const requests = items.map((item) =>
+      this.api.getPlanningRecommendation(item.id!, 'Monthly', branchId),
+    );
     forkJoin(requests).subscribe({
       next: (responses) => {
-        const parsedPlans = responses.map((res, i) => this.parsePlanningString(items[i].id!, res));
+        if (requestId !== this.planningRequestId) return;
+        const branchName = this.branches().find((branch) => branch.id === branchId);
+        const parsedPlans = responses.map((res, i) =>
+          this.parsePlanningString(items[i].id!, res, branchName?.branchName || branchName?.name || ''),
+        );
         this.smartPlans.set(parsedPlans.filter((p) => p !== null) as PlanningRecommendation[]);
+        this.planningLoading.set(false);
       },
-      error: (err) => console.error('Could not load planning predictions', err),
+      error: (err) => {
+        if (requestId !== this.planningRequestId) return;
+        this.planningError.set(`Could not load planning predictions: ${err.message}`);
+        this.planningLoading.set(false);
+      },
     });
   }
 
   // Engine to convert backend String to UI Object
-  parsePlanningString(itemId: number, raw: string): PlanningRecommendation | null {
+  parsePlanningString(itemId: number, raw: string, branchName: string): PlanningRecommendation | null {
     if (!raw || raw.includes('not found')) return null;
     const extract = (key: string) => {
       const match = raw.match(new RegExp(`${key}:\\s*([^,]+)`));
@@ -78,6 +120,7 @@ export class Forecasting implements OnInit {
 
     return {
       itemId: itemId,
+      branchName,
       itemName: extract('Item'),
       currentStock: parseFloat(extract('Current Stock')) || 0,
       reorderThreshold: parseFloat(extract('Reorder Threshold')) || 0,

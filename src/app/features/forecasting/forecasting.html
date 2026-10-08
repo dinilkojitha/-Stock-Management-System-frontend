@@ -16,12 +16,32 @@
 
   <!-- ==================== SMART PLANNING ==================== -->
   @if(activeTab() === 'planning') {
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <div class="space-y-4">
+      <div class="flex flex-col sm:flex-row sm:items-center gap-3 rounded-xl border border-slate-200 bg-white p-4">
+        <label for="forecast-branch" class="text-sm font-semibold text-slate-700">Forecast branch</label>
+        <select id="forecast-branch" [ngModel]="selectedBranchId()" (ngModelChange)="onPlanningBranchChange($event)"
+          class="w-full sm:w-auto min-w-56 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm">
+          @for (branch of branches(); track branch.id) {
+            <option [ngValue]="branch.id">{{ branch.branchName || branch.name }}</option>
+          }
+        </select>
+        <p class="text-xs text-slate-500">Demand uses this branch's recorded stock issues. Older transactions without branch data are not included.</p>
+      </div>
+
+      @if (planningError()) {
+        <p role="alert" class="rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">{{ planningError() }}</p>
+      }
+      @if (planningLoading()) {
+        <p class="p-6 text-center text-sm text-slate-500">Calculating branch forecasts...</p>
+      }
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       @for (f of smartPlans(); track f.itemId) {
         <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-4 hover:shadow-md transition">
           <div class="flex justify-between items-start border-b border-slate-100 pb-3">
             <div>
               <h3 class="font-bold text-base text-slate-900 leading-tight">{{ f.itemName }}</h3>
+              <p class="text-xs text-slate-500">{{ f.branchName }}</p>
               <p class="text-xs font-medium text-slate-400 uppercase tracking-wider">{{ f.forecastPeriod }} Forecast</p>
             </div>
           </div>
@@ -46,10 +66,13 @@
           </div>
         </div>
       } @empty {
+        @if (!planningLoading() && !planningError()) {
         <div class="col-span-full p-8 text-center border-2 border-dashed border-slate-200 rounded-xl">
-          <p class="text-sm text-slate-500">Processing algorithms. No inventory data found yet.</p>
+          <p class="text-sm text-slate-500">No inventory data found for forecasting.</p>
         </div>
+        }
       }
+      </div>
     </div>
   }
 
