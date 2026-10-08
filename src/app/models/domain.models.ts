@@ -37,36 +37,36 @@ export interface Item {
   quantity: number;
 }
 
-export interface StockTransferCreateRequest {
-  fromBranchId: number;
-  toBranchId: number;
-  requestedById: number;
-  // statusId: number;
-  items: Item[];
-}
+// export interface StockTransferCreateRequest {
+//   fromBranchId: number;
+//   toBranchId: number;
+//   requestedById: number;
+//   statusId: number;
+//   items: Item[];
+// }
 
 // Merged StockTransferResponse to prevent duplicates
-export interface StockTransferResponse {
-  id: number;
-  fromBranchId?: number;
-  fromBranchName?: string;
-  toBranchId?: number;
-  toBranchName?: string;
-  requestedById?: number;
-  requestedByUsername?: string;
-  statusId?: number;
-  statusName?: string;
-  requestTime?: string;
-  items?: TransferItemResponseDto[];
-
-  // Alternative fields based on different components
-  transferNumber?: string;
-  sourceBranchName?: string;
-  destinationBranchName?: string;
-  status?: string;
-  itemsCount?: number;
-  createdAt?: string;
-}
+// export interface StockTransferResponse {
+//   id: number;
+//   fromBranchId?: number;
+//   fromBranchName?: string;
+//   toBranchId?: number;
+//   toBranchName?: string;
+//   requestedById?: number;
+//   requestedByUsername?: string;
+//   statusId?: number;
+//   statusName?: string;
+//   requestTime?: string;
+//   items?: TransferItemResponseDto[];
+//
+//   // Alternative fields based on different components
+//   transferNumber?: string;
+//   sourceBranchName?: string;
+//   destinationBranchName?: string;
+//   status?: string;
+//   itemsCount?: number;
+//   createdAt?: string;
+// }
 
 export interface Category {
   categoryId?: number;
@@ -123,6 +123,61 @@ export interface StockItem {
 //   date: string;
 // }
 
+
+// --- DISTRIBUTION DOMAIN ---
+export interface InternalRequest {
+  id: number;
+  department?: any; // Nested entity
+  requestedByUser?: any; // Nested entity
+  requestedAt: string;
+  emergencyRequest: boolean;
+  status: string;
+}
+
+export interface RequestItemDTO {
+  itemId: number;
+  quantity: number;
+}
+
+export interface CreateInternalRequestDTO {
+  departmentId: number;
+  requestedByUserId: number; // Added to UI to prevent 500 errors
+  requestedAt: string;
+  emergencyRequest: boolean;
+  status: string;
+  items: RequestItemDTO[];
+}
+
+export interface StockAllocationDTO {
+  itemId: number;
+  quantity: number;
+}
+
+export interface StockAllocationRequestDTO {
+  items: StockAllocationDTO[];
+}
+
+export interface ConsumptionItemDTO {
+  itemId: number;
+  quantityConsumed: number;
+}
+
+export interface ConsumptionDTO {
+  requestId: number;
+  departmentId: number;
+  items: ConsumptionItemDTO[];
+}
+
+export interface ConsumptionResponseDTO {
+  consumptionId: number;
+  requestId: number;
+  departmentId: number;
+  itemId: number;
+  allocatedQuantity: number;
+  quantityConsumed: number;
+  consumedAt: string;
+}
+//////////////////////////////////////////////////////////////////////////////////////////////
 // --- DISTRIBUTION DOMAIN ---
 
 export interface InternalRequest {
@@ -360,15 +415,7 @@ export interface DepartmentResponse {
 
 // --- FORECASTING DOMAIN ---
 
-export interface ForecastResponse {
-  itemId: number;
-  itemName: string;
-  currentStock: number;
-  burnRatePerDay: number;
-  predictedDepletionDays: number;
-  suggestedReorderQuantity: number;
-  confidenceScore: number;
-}
+// --- FORECASTING DOMAIN ---
 export interface PlanningRecommendation {
   itemId: number;
   itemName: string;
@@ -386,6 +433,33 @@ export interface ParsedForecastDbRow {
   date: string;
   period: string;
 }
+
+// export interface ForecastResponse {
+//   itemId: number;
+//   itemName: string;
+//   currentStock: number;
+//   burnRatePerDay: number;
+//   predictedDepletionDays: number;
+//   suggestedReorderQuantity: number;
+//   confidenceScore: number;
+// }
+// export interface PlanningRecommendation {
+//   itemId: number;
+//   itemName: string;
+//   currentStock: number;
+//   reorderThreshold: number;
+//   forecastPeriod: string;
+//   predictedDemand: number;
+//   recommendedPurchase: number;
+// }
+//
+// export interface ParsedForecastDbRow {
+//   id: string;
+//   itemName: string;
+//   predictedDemand: string;
+//   date: string;
+//   period: string;
+// }
 
 // --- AUDIT DOMAIN ---
 export interface TransactionResponse {
@@ -420,4 +494,52 @@ export interface CreateTransactionRequest {
   item: { id: number };
   quantityDelta: number;
   remarks: string;
+}
+
+// ==========================================
+// --- STOCK & STOCK TRANSFER DOMAIN ---
+// ==========================================
+
+export interface TransferItemDto {
+  inventoryItemId: number;
+  inventoryItemName: string;
+  quantity: number;
+}
+
+export interface StockTransferCreateRequest {
+  fromBranchId: number;
+  toBranchId: number;
+  requestedById: number;
+  statusId: number;
+  items: TransferItemDto[];
+}
+
+export interface TransferItemResponseDto {
+  inventoryItemId: number;
+  inventoryItemName: string;
+  quantity: number;
+}
+
+export interface StockTransferResponse {
+  id: number;
+  fromBranchId: number;
+  fromBranchName: string;
+  toBranchId: number;
+  toBranchName: string;
+  requestedById: number;
+  requestedByName: string;    // Matches your backend DTO exactly
+  statusId: number;
+  statusName: string;         // e.g. "Pending", "Approved"
+  requestTime: string;        // ISO Date String
+  items: TransferItemResponseDto[];
+}
+
+// Main Stock Entity (Mapped to your Java Stock Entity)
+export interface Stock {
+  stockId: number;
+  quantity: number;
+  manufactureDate?: string;   // format: YYYY-MM-DD
+  expiryDate?: string;        // format: YYYY-MM-DD
+  branch?: any;               // Nested Branch Entity
+  items?: any[];              // Nested InventoryItem Set
 }

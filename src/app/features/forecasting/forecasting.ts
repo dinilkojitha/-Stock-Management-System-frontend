@@ -19,7 +19,7 @@ import {
 export class Forecasting implements OnInit {
   private api = inject(ApiService);
 
-  // State
+  // UI State
   activeTab = signal<'planning' | 'wastage' | 'database'>('planning');
   inventoryItems = signal<InventoryItem[]>([]);
 
@@ -31,7 +31,7 @@ export class Forecasting implements OnInit {
   wastageReport = signal<string>('Select an item to view report.');
   totalWastageText = signal<string>('--');
   wastageCostText = signal<string>('--');
-  wastageForm = { quantity: 1, reason: 'Expired', userId: 1 }; // Added userId to prevent 500 error!
+  wastageForm = { quantity: 1, reason: 'Expired', userId: 1 }; // Default user ID 1 (must exist in DB)
 
   // Tab 3: Forecast DB
   forecastDbRows = signal<ParsedForecastDbRow[]>([]);
@@ -66,7 +66,7 @@ export class Forecasting implements OnInit {
     });
   }
 
-  // Parses: "Item: Apples, Current Stock: 50.0, Reorder Threshold: 10.0, Forecast Period: Monthly, Predicted Demand: 30.0, Recommended Purchase: 0.0"
+  // Engine to convert backend String to UI Object
   parsePlanningString(itemId: number, raw: string): PlanningRecommendation | null {
     if (!raw || raw.includes('not found')) return null;
     const extract = (key: string) => {
@@ -88,7 +88,7 @@ export class Forecasting implements OnInit {
   // --- 2. Wastage Management ---
   onWastageItemChange() {
     const id = this.wastageItemId();
-    if (!id) return;
+    if (!id || id == 0) return;
 
     this.api.getWastageHistory(id).subscribe((res) => this.wastageReport.set(res));
     this.api.getTotalWastage(id).subscribe((res) => this.totalWastageText.set(res));
@@ -117,7 +117,7 @@ export class Forecasting implements OnInit {
         },
         error: (err) =>
           alert(
-            'Failed to record wastage. Ensure User ID exists and Stock is sufficient.\n' +
+            'Failed to record wastage. Ensure User ID exists and Stock is sufficient.\n\nBackend Error:\n' +
               err.message,
           ),
       });

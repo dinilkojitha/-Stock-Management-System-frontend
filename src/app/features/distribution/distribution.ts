@@ -37,7 +37,7 @@ export class Distribution implements OnInit {
   // Forms
   newRequest: CreateInternalRequestDTO = {
     departmentId: 0,
-    requestedByUserId: 1, // DEFAULT USER ID: Must exist in the DB!
+    requestedByUserId: 1, // Exposed in HTML so user can change it
     requestedAt: new Date().toISOString(),
     emergencyRequest: false,
     status: 'PENDING',
@@ -87,6 +87,10 @@ export class Distribution implements OnInit {
       alert('Please select a Department!');
       return;
     }
+    if (!this.newRequest.requestedByUserId) {
+      alert('Please provide a User ID!');
+      return;
+    }
     if (this.newRequest.items.length === 0) {
       alert('Please add at least one item!');
       return;
@@ -105,9 +109,9 @@ export class Distribution implements OnInit {
       error: (err) => {
         console.error('Request creation failed:', err);
         alert(
-          'Backend failed with a 500 error.\nPlease check your Spring Boot terminal! Make sure a User with ID ' +
+          'Backend failed. Ensure User ID ' +
             this.newRequest.requestedByUserId +
-            ' exists in your database.',
+            ' exists in the DB.',
         );
       },
     });

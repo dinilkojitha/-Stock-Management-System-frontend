@@ -1,15 +1,23 @@
-import { Component, inject, OnInit, signal, computed } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
   StockTransferResponse,
   StockTransferCreateRequest,
   BranchResponse,
-  Item,
+  InventoryItem,
+  Role,
 } from '../../models/domain.models';
 import { ApiService } from '../../core/services/api.service';
-import { Inventory } from '../inventory/inventory';
-
+import { Department } from '../../core/services/auth.service';
+export interface UserSession {
+  id: number | null;
+  fullName: string;
+  email: string;
+  phoneNumber: string;
+  role: Role;
+  department: Department;
+}
 @Component({
   selector: 'app-stock',
   standalone: true,
@@ -19,21 +27,25 @@ import { Inventory } from '../inventory/inventory';
 })
 export class Stock implements OnInit {
   private api = inject(ApiService);
-  Itemses = signal<any[]>([]); // Replace 'any' with the actual type of your items if available
 
+  // Data signals
+  inventoryItems = signal<InventoryItem[]>([]);
+  branches = signal<BranchResponse[]>([]);
   transfers = signal<StockTransferResponse[]>([]);
+
+  // UI state
   searchBranchId = signal<string>('');
   selectedTransfer = signal<StockTransferResponse | null>(null);
   showCreateModal = signal<boolean>(false);
   errorMessage = signal<string | null>(null);
-  branches = signal<BranchResponse[]>([]);
 
   // New transfer modal form state
   newTransfer: StockTransferCreateRequest = {
-    fromBranchId: 1,
-    toBranchId: 2,
-    requestedById: 1,
-    items: [] as Item[],
+    fromBranchId: 0,
+    toBranchId: 0,
+    requestedById: 1, // Must exist in your DB User table
+    statusId: 1, // Must exist in your DB Status table (e.g., 1 = Pending)
+    items: [],
   };
 
   ngOnInit() {
@@ -44,22 +56,15 @@ export class Stock implements OnInit {
 
   loadAllBranches() {
     this.api.getAllBranches().subscribe({
-      next: (data) => {
-        console.log('Branches loaded:', data);
-        this.branches.set(data);
-      },
-      error: (err) => this.errorMessage.set('Failed to load branches'),
+      next: (data) => this.branches.set(data),
+      error: () => this.errorMessage.set('Failed to load branches'),
     });
   }
 
   loadItems() {
-    this.api.getItems().subscribe({
-      next: (data) => {
-        console.log('Items loaded:', data);
-        this.Itemses.set(data);
-        console.log('Items signal updated:', this.Itemses());
-      },
-      error: (err) => this.errorMessage.set('Failed to load items'),
+    this.api.getInventory().subscribe({
+      next: (data) => this.inventoryItems.set(data),
+      error: () => this.errorMessage.set('Failed to load inventory items'),
     });
   }
 
@@ -69,8 +74,8 @@ export class Stock implements OnInit {
         this.transfers.set(data);
         this.errorMessage.set(null);
       },
-      error: (err) => {
-        this.errorMessage.set('Could not connect to backend. Loaded demo fallback data.');
+      error: () => {
+        this.errorMessage.set('Could not connect to backend to fetch transfers.');
       },
     });
   }
@@ -83,7 +88,7 @@ export class Stock implements OnInit {
     }
     this.api.getTransfersByBranch(id).subscribe({
       next: (data) => this.transfers.set(data),
-      error: (err) => this.errorMessage.set(`Failed to fetch transfers for Branch #${id}`),
+      error: () => this.errorMessage.set(`Failed to fetch transfers for Branch #${id}`),
     });
   }
 
@@ -107,25 +112,92 @@ export class Stock implements OnInit {
     });
   }
 
-  addItemRow() {
-    // @ts-ignore
-    this.newTransfer.items.push({ id: 0, itemName: "" , quantity: 0});
-  }
-
-  removeItemRow(index: number) {
-    if (this.newTransfer.items.length > 1) {
-      this.newTransfer.items.splice(index, 1);
+  //
+  // @NotNull
+  // private Integer fromBranchId;
+  // @NotNull
+  // private Integer toBranchId;
+  // @NotNull
+  // private Integer requestedById;
+  // @NotNull
+  // private Integer statusId;
+  // @NotEmpty
+  // private List<TransferItemDto> items;
+  get session(): UserSession | null {
+    const raw = localStorage.getItem('stock_session');
+    if (!raw) return null;
+    try {
+      return JSON.parse(raw) as UserSession;
+    } catch {
+      return null;
     }
   }
 
+  get currentUserId(): number {
+    return this.session?.id ?? 0;
+  }
+
+  get currentBranchId(): number {
+    return this.session?.department?.branch?.id ?? 1;
+  }
+
+  openCreateModal() {
+    this.newTransfer = {
+      fromBranchId: this.currentBranchId, // Automatically sets Branch 1
+      toBranchId: 0,
+      requestedById: this.currentUserId, // Currently null in your JSON; check backend
+      statusId: 1,
+      items: [
+        {
+          inventoryItemId: 0,
+          quantity: 1,
+          inventoryItemName: '',
+        },
+      ],
+    };
+    this.showCreateModal.set(true);
+  }
+
+  addItemRow() {
+    this.newTransfer.items.push({ inventoryItemId: 0, quantity: 0, inventoryItemName: '' });
+  }
+
+  removeItemRow(index: number) {
+    this.newTransfer.items.splice(index, 1);
+  }
+
   submitTransfer() {
-    console.log('Submitting transfer:', this.newTransfer);
+    if (!this.newTransfer.fromBranchId || !this.newTransfer.toBranchId) {
+      alert('Please select both source and destination branches.');
+      return;
+    }
+    if (this.newTransfer.fromBranchId === this.newTransfer.toBranchId) {
+      alert('Source and destination branches cannot be the same.');
+      return;
+    }
+    if (
+      this.newTransfer.items.length === 0 ||
+      this.newTransfer.items.some((i) => !i.inventoryItemId || i.quantity <= 0)
+    ) {
+      alert('Please select valid inventory items with quantities greater than 0.');
+      return;
+    }
+
+
+    console.log(this.newTransfer);
+
     this.api.createTransfer(this.newTransfer).subscribe({
       next: (created) => {
+        // Add new transfer to top of the list and close modal
         this.transfers.update((list) => [created, ...list]);
         this.showCreateModal.set(false);
       },
-      error: (err) => alert(err?.error?.message || 'Error creating transfer'),
+      error: (err) => {
+        console.error(err);
+        alert(
+          'Failed to create transfer.\n\nPlease ensure User ID 1 and Status ID 1 exist in your database to prevent 500 errors.',
+        );
+      },
     });
   }
 
@@ -139,7 +211,7 @@ export class Stock implements OnInit {
         a.click();
         window.URL.revokeObjectURL(url);
       },
-      error: (err) => alert('Failed to download PDF manifest'),
+      error: () => alert('Failed to download PDF manifest'),
     });
   }
 

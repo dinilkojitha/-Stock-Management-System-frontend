@@ -11,8 +11,6 @@ import {
   OrderResponse,
   SupplierResponse,
   BranchResponse,
-  ForecastResponse,
-  TransactionResponse,
   BranchRequest,
   BranchOverviewResponse,
   BranchPerformanceResponse,
@@ -162,7 +160,9 @@ export class ApiService {
   }
 
   deleteInventoryItem(id: number): Observable<void> {
-    return this.http.delete<void>(`${this.base}/inventory-items/delete/${id}` , { responseType: 'text' as 'json' });
+    return this.http.delete<void>(`${this.base}/inventory-items/delete/${id}`, {
+      responseType: 'text' as 'json',
+    });
   }
 
   downloadManifest(id: number): Observable<Blob> {
@@ -175,19 +175,23 @@ export class ApiService {
     return this.http.get<InternalRequest[]>(`${this.base}/internal-requests`);
   }
 
+  // Maps to @PostMapping("/complete")
   createInternalRequest(request: CreateInternalRequestDTO): Observable<InternalRequest> {
     return this.http.post<InternalRequest>(`${this.base}/internal-requests/complete`, request);
   }
 
+  // Maps to @DeleteMapping("/{id}/delete")
   deleteInternalRequest(id: number): Observable<void> {
     return this.http.delete<void>(`${this.base}/internal-requests/${id}/delete`);
   }
 
+  // Maps to @PostMapping("/{requestId}/allocate")
   allocateStock(requestId: number, request: StockAllocationRequestDTO): Observable<void> {
     return this.http.post<void>(`${this.base}/internal-requests/${requestId}/allocate`, request);
   }
 
   // --- CONSUMPTIONS ---
+
   getConsumptions(): Observable<ConsumptionResponseDTO[]> {
     return this.http.get<ConsumptionResponseDTO[]>(`${this.base}/consumptions`);
   }
@@ -195,6 +199,35 @@ export class ApiService {
   createConsumption(request: ConsumptionDTO): Observable<ConsumptionResponseDTO[]> {
     return this.http.post<ConsumptionResponseDTO[]>(`${this.base}/consumptions`, request);
   }
+
+  // // --- DISTRIBUTION / INTERNAL REQUESTS ---
+  //
+  // getInternalRequests(): Observable<InternalRequest[]> {
+  //   return this.http.get<InternalRequest[]>(`${this.base}/internal-requests`);
+  // }
+  //
+  // createInternalRequest(request: CreateInternalRequestDTO): Observable<InternalRequest> {
+  //   return this.http.post<InternalRequest>(`${this.base}/internal-requests/complete`, request);
+  // }
+  //
+  // deleteInternalRequest(id: number): Observable<void> {
+  //   return this.http.delete<void>(`${this.base}/internal-requests/${id}/delete`);
+  // }
+  //
+  // allocateStock(requestId: number, request: StockAllocationRequestDTO): Observable<void> {
+  //   return this.http.post<void>(`${this.base}/internal-requests/${requestId}/allocate`, request);
+  // }
+  //
+  // // --- CONSUMPTIONS ---
+  // getConsumptions(): Observable<ConsumptionResponseDTO[]> {
+  //   return this.http.get<ConsumptionResponseDTO[]>(`${this.base}/consumptions`);
+  // }
+  //
+  // createConsumption(request: ConsumptionDTO): Observable<ConsumptionResponseDTO[]> {
+  //   return this.http.post<ConsumptionResponseDTO[]>(`${this.base}/consumptions`, request);
+  // }
+
+  // --- FORECASTING & WASTAGE ENDPOINTS ---
 
   // --- FORECASTING & WASTAGE ENDPOINTS ---
 
@@ -242,6 +275,51 @@ export class ApiService {
   getWastageCost(itemId: number): Observable<string> {
     return this.http.get(`${this.base}/forecasts/wastage/${itemId}/cost`, { responseType: 'text' });
   }
+
+  // createForecast(forecast: any): Observable<string> {
+  //   return this.http.post(`${this.base}/forecasts`, forecast, { responseType: 'text' });
+  // }
+  //
+  // getAllForecastsRaw(): Observable<string> {
+  //   return this.http.get(`${this.base}/forecasts`, { responseType: 'text' });
+  // }
+  //
+  // deleteForecast(id: number): Observable<string> {
+  //   return this.http.delete(`${this.base}/forecasts/${id}`, { responseType: 'text' });
+  // }
+  //
+  // getPlanningRecommendation(itemId: number, period: string): Observable<string> {
+  //   return this.http.get(`${this.base}/forecasts/planning/${itemId}?forecastPeriod=${period}`, {
+  //     responseType: 'text',
+  //   });
+  // }
+  //
+  // recordWastage(
+  //   itemId: number,
+  //   userId: number,
+  //   quantity: number,
+  //   reason: string,
+  // ): Observable<string> {
+  //   return this.http.post(
+  //     `${this.base}/forecasts/wastage/${itemId}?userId=${userId}&quantity=${quantity}&reason=${reason}`,
+  //     {},
+  //     { responseType: 'text' },
+  //   );
+  // }
+  //
+  // getWastageHistory(itemId: number): Observable<string> {
+  //   return this.http.get(`${this.base}/forecasts/wastage/${itemId}`, { responseType: 'text' });
+  // }
+  //
+  // getTotalWastage(itemId: number): Observable<string> {
+  //   return this.http.get(`${this.base}/forecasts/wastage/${itemId}/total`, {
+  //     responseType: 'text',
+  //   });
+  // }
+  //
+  // getWastageCost(itemId: number): Observable<string> {
+  //   return this.http.get(`${this.base}/forecasts/wastage/${itemId}/cost`, { responseType: 'text' });
+  // }
 
   // --- AUDIT / TRANSACTIONS ---
 
