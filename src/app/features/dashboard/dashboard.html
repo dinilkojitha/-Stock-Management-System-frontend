@@ -34,8 +34,8 @@
         <p class="mt-2 text-3xl font-bold text-slate-900">{{ data.totalQuantity | number:'1.0-2' }}</p>
       </article>
       <article class="rounded-xl border border-amber-200 bg-amber-50 p-5 shadow-sm">
-        <p class="text-sm font-medium text-amber-800">Low-stock items</p>
-        <p class="mt-2 text-3xl font-bold text-amber-900">{{ data.lowStockItems }}</p>
+        <p class="text-sm font-medium text-amber-800">Branch low-stock alerts</p>
+        <p class="mt-2 text-3xl font-bold text-amber-900">{{ lowStockItems().length }}</p>
       </article>
       <article class="rounded-xl border border-rose-200 bg-rose-50 p-5 shadow-sm">
         <p class="text-sm font-medium text-rose-800">Expired batches</p>
@@ -60,11 +60,21 @@
     <div class="flex flex-col gap-3 border-b border-slate-200 p-5 sm:flex-row sm:items-center sm:justify-between">
       <div>
         <h2 class="font-semibold text-slate-900">Low-stock alerts</h2>
-        <p class="mt-1 text-sm text-slate-500">Items at or below their reorder threshold.</p>
+        <p class="mt-1 text-sm text-slate-500">Branch stock at or below each item's reorder threshold.</p>
       </div>
-      <a routerLink="/app/inventory" class="text-sm font-semibold text-indigo-600 hover:text-indigo-800">
-        View inventory
-      </a>
+      <div class="flex flex-wrap items-center gap-3">
+        <label for="low-stock-branch" class="text-sm font-medium text-slate-600">Branch</label>
+        <select id="low-stock-branch" [value]="selectedBranchId() ?? 'all'" (change)="onBranchSelectionChange($event)"
+          class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700">
+          <option value="all">All branches</option>
+          @for (branch of branches(); track branch.id) {
+            <option [value]="branch.id">{{ branch.branchName || branch.name }}</option>
+          }
+        </select>
+        <a routerLink="/app/inventory" class="text-sm font-semibold text-indigo-600 hover:text-indigo-800">
+          View inventory
+        </a>
+      </div>
     </div>
 
     @if (lowStockError()) {
@@ -80,27 +90,29 @@
           <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
             <tr>
               <th scope="col" class="px-5 py-3 font-semibold">Item</th>
+              <th scope="col" class="px-5 py-3 font-semibold">Branch</th>
               <th scope="col" class="px-5 py-3 font-semibold">Category</th>
               <th scope="col" class="px-5 py-3 text-right font-semibold">Available</th>
               <th scope="col" class="px-5 py-3 text-right font-semibold">Reorder at</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100">
-            @for (item of lowStockItems(); track item.id) {
+            @for (item of filteredLowStockItems; track item.branchId + ':' + item.itemId) {
               <tr>
                 <td class="px-5 py-3 font-medium text-slate-900">{{ item.itemName }}</td>
-                <td class="px-5 py-3 text-slate-600">{{ item.category.name }}</td>
+                <td class="px-5 py-3 text-slate-600">{{ item.branchName }}</td>
+                <td class="px-5 py-3 text-slate-600">{{ item.categoryName }}</td>
                 <td class="px-5 py-3 text-right font-semibold text-rose-700">
-                  {{ item.totalQuantity | number:'1.0-2' }} {{ item.unitType.name }}
+                  {{ item.availableQuantity | number:'1.0-2' }} {{ item.unitName }}
                 </td>
                 <td class="px-5 py-3 text-right text-slate-600">
-                  {{ item.reorderThreshold | number:'1.0-2' }} {{ item.unitType.name }}
+                  {{ item.reorderThreshold | number:'1.0-2' }} {{ item.unitName }}
                 </td>
               </tr>
             } @empty {
               <tr>
-                <td colspan="4" class="px-5 py-8 text-center text-slate-500">
-                  No items are below their reorder threshold.
+                <td colspan="5" class="px-5 py-8 text-center text-slate-500">
+                  No items are below their reorder threshold for this branch.
                 </td>
               </tr>
             }
