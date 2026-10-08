@@ -23,6 +23,18 @@ export class Organization implements OnInit {
   branches = signal<BranchResponse[]>([]);
   departments = signal<DepartmentResponse[]>([]);
   performances = signal<BranchPerformanceResponse[]>([]);
+  selectedBranchId = signal<number | null>(null);
+  editingBranchId = signal<number | null>(null);
+  editingDepartmentId = signal<number | null>(null);
+  branchEdit: BranchRequest = { branchName: '', location: '' };
+  departmentEdit: DepartmentRequest = { departmentName: '', location: '', branchId: 0 };
+
+  get visibleDepartments(): DepartmentResponse[] {
+    const branchId = this.selectedBranchId();
+    return branchId === null
+      ? this.departments()
+      : this.departments().filter((department) => department.branchId === branchId);
+  }
 
   // Simple form models
   newBranch: BranchRequest = { branchName: '', location: '' };
@@ -64,6 +76,34 @@ export class Organization implements OnInit {
     });
   }
 
+  selectBranch(branchId: number | null) {
+    this.selectedBranchId.set(branchId);
+  }
+
+  startBranchEdit(branch: BranchResponse) {
+    this.editingBranchId.set(branch.id);
+    this.branchEdit = {
+      branchName: branch.branchName || branch.name,
+      location: branch.location,
+    };
+  }
+
+  saveBranchEdit() {
+    const id = this.editingBranchId();
+    if (id === null || !this.branchEdit.branchName.trim()) return;
+    this.api.updateBranch(id, this.branchEdit).subscribe({
+      next: () => {
+        this.editingBranchId.set(null);
+        this.loadAllData();
+      },
+      error: (err) => alert('Could not update branch: ' + (err?.error?.message || err.message)),
+    });
+  }
+
+  cancelBranchEdit() {
+    this.editingBranchId.set(null);
+  }
+
   deleteBranch(id: number) {
     if (confirm('Are you sure you want to delete this branch?')) {
       this.api.deleteBranch(id).subscribe({
@@ -88,6 +128,31 @@ export class Organization implements OnInit {
         this.newDept = { departmentName: '', location: '', branchId: 0 }; // reset
       },
     });
+  }
+
+  startDepartmentEdit(department: DepartmentResponse) {
+    this.editingDepartmentId.set(department.id);
+    this.departmentEdit = {
+      departmentName: department.departmentName,
+      location: department.location,
+      branchId: department.branchId,
+    };
+  }
+
+  saveDepartmentEdit() {
+    const id = this.editingDepartmentId();
+    if (id === null || !this.departmentEdit.departmentName.trim() || !this.departmentEdit.branchId) return;
+    this.api.updateDepartment(id, this.departmentEdit).subscribe({
+      next: () => {
+        this.editingDepartmentId.set(null);
+        this.loadDepartments();
+      },
+      error: (err) => alert('Could not update department: ' + (err?.error?.message || err.message)),
+    });
+  }
+
+  cancelDepartmentEdit() {
+    this.editingDepartmentId.set(null);
   }
 
   deleteDepartment(id: number) {

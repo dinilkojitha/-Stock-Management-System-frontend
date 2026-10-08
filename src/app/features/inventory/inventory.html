@@ -6,11 +6,19 @@
       <p class="text-xs text-slate-500">Master product catalog, category references, and unit controls.</p>
     </div>
     <div class="flex items-center gap-3">
+      <button
+        type="button"
+        (click)="setShowArchived(!showArchived())"
+        [attr.aria-pressed]="showArchived()"
+        class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+      >
+        {{ showArchived() ? 'View Active Items' : 'View Archived Items' }}
+      </button>
       <!-- Search -->
       <div class="relative">
         <input
           type="text"
-          placeholder="Search items, SKU..."
+          [placeholder]="showArchived() ? 'Search archived items...' : 'Search items, SKU...'"
           [ngModel]="searchQuery()"
           (ngModelChange)="searchQuery.set($event)"
           class="w-64 pl-3 pr-4 py-1.5 text-xs rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition"
@@ -28,6 +36,11 @@
 
   <!-- Table Container -->
   <div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+    @if (showArchived()) {
+      <div class="border-b border-slate-200 bg-amber-50 px-4 py-3 text-xs text-amber-900">
+        Archived items are hidden from active inventory and selection lists. Their transaction history is preserved.
+      </div>
+    }
     <table class="w-full text-left border-collapse text-xs">
       <thead class="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold uppercase tracking-wider">
       <tr>
@@ -43,7 +56,15 @@
       <tbody class="divide-y divide-slate-100">
         @for (item of filteredItems(); track item.id) {
           <tr class="hover:bg-slate-50 transition">
-            <td class="py-3.5 px-4 font-mono font-medium text-slate-700">{{ item.itemName }}</td>
+            <td class="py-3.5 px-4 font-mono font-medium">
+              <button
+                type="button"
+                (click)="openItemStock(item)"
+                class="text-left text-indigo-700 hover:text-indigo-900 hover:underline"
+                [attr.aria-label]="'View branch quantities for ' + item.itemName">
+                {{ item.itemName }}
+              </button>
+            </td>
             <td class="py-3.5 px-4 font-semibold text-slate-900">{{ item.description }}</td>
             <td class="py-3.5 px-4">
               <span class="px-2 py-0.5 rounded-full bg-slate-100 border border-slate-200 text-slate-700 font-medium">
@@ -59,19 +80,28 @@
             <td class="py-3.5 px-4 text-right font-medium text-slate-900">${{ item.unitPrice.toFixed(2) }}</td>
             <td class="py-3.5 px-4 text-center">
               <div class="inline-flex items-center gap-2">
-                <button
-                  (click)="openEditModal(item)"
-                  class="text-slate-600 hover:text-slate-900 font-medium hover:underline"
-                >
-                  Edit
-                </button>
-                <span class="text-slate-300">|</span>
-                <button
-                  (click)="deleteItem(item.id)"
-                  class="text-rose-600 hover:text-rose-800 font-medium hover:underline"
-                >
-                  Delete
-                </button>
+                @if (showArchived()) {
+                  <button
+                    (click)="restoreItem(item.id)"
+                    class="text-indigo-600 hover:text-indigo-800 font-medium hover:underline"
+                  >
+                    Restore
+                  </button>
+                } @else {
+                  <button
+                    (click)="openEditModal(item)"
+                    class="text-slate-600 hover:text-slate-900 font-medium hover:underline"
+                  >
+                    Edit
+                  </button>
+                  <span class="text-slate-300">|</span>
+                  <button
+                    (click)="archiveItem(item.id)"
+                    class="text-rose-600 hover:text-rose-800 font-medium hover:underline"
+                  >
+                    Archive
+                  </button>
+                }
               </div>
             </td>
           </tr>
@@ -85,6 +115,80 @@
       </tbody>
     </table>
   </div>
+
+  @if (selectedItem(); as item) {
+    <div
+      class="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/40 p-4"
+      (click)="closeItemStock()">
+      <section
+        role="dialog"
+        aria-modal="true"
+        [attr.aria-label]="'Branch quantities for ' + item.itemName"
+        class="w-full max-w-xl rounded-xl bg-white shadow-2xl"
+        (click)="$event.stopPropagation()">
+        <div class="flex items-start justify-between border-b border-slate-200 p-5">
+          <div>
+            <h2 class="text-lg font-bold text-slate-900">{{ item.itemName }}</h2>
+            <p class="mt-1 text-sm text-slate-500">Available quantity by branch</p>
+          </div>
+          <button
+            type="button"
+            aria-label="Close branch quantities"
+            (click)="closeItemStock()"
+            class="rounded-lg px-2 py-1 text-slate-500 hover:bg-slate-100">
+            ✕
+          </button>
+        </div>
+
+        <div class="p-5">
+          @if (itemStockLoading()) {
+            <p class="py-8 text-center text-sm text-slate-500">Loading branch quantities…</p>
+          } @else if (itemStockError()) {
+            <p role="alert" class="rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">
+              {{ itemStockError() }}
+            </p>
+          } @else {
+            <div class="mb-4 flex items-center justify-between rounded-lg bg-slate-50 p-3">
+              <span class="text-sm font-medium text-slate-600">Total across branches</span>
+              <span class="font-bold text-slate-900">
+                {{ branchItemQuantities().reduce((total, branch) => total + branch.quantity, 0) }}
+                {{ item.unitType.name }}
+              </span>
+            </div>
+
+            <div class="overflow-hidden rounded-lg border border-slate-200">
+              <table class="w-full text-left text-sm">
+                <thead class="bg-slate-50 text-xs uppercase text-slate-500">
+                  <tr>
+                    <th class="px-4 py-3">Branch</th>
+                    <th class="px-4 py-3 text-right">Quantity</th>
+                    <th class="px-4 py-3 text-right">Batches</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                  @for (branch of branchItemQuantities(); track branch.branchId) {
+                    <tr>
+                      <td class="px-4 py-3 font-medium text-slate-800">{{ branch.branchName }}</td>
+                      <td class="px-4 py-3 text-right font-semibold text-slate-900">
+                        {{ branch.quantity }} {{ item.unitType.name }}
+                      </td>
+                      <td class="px-4 py-3 text-right text-slate-500">{{ branch.batchCount }}</td>
+                    </tr>
+                  } @empty {
+                    <tr>
+                      <td colspan="3" class="px-4 py-8 text-center text-slate-500">
+                        No branches found.
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        </div>
+      </section>
+    </div>
+  }
 
   <!-- Slide-over Drawer / Modal -->
   @if (isDrawerOpen()) {

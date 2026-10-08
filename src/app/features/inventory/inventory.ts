@@ -1,8 +1,16 @@
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { forkJoin } from 'rxjs';
 import { ApiService } from '../../core/services/api.service';
-import { Category, InventoryItem, UnitType } from '../../models/domain.models';
+import { BranchResponse, Category, InventoryItem, StockBatch, UnitType } from '../../models/domain.models';
+
+interface BranchItemQuantity {
+  branchId: number;
+  branchName: string;
+  quantity: number;
+  batchCount: number;
+}
 
 @Component({
   selector: 'app-inventory',
@@ -15,10 +23,38 @@ export class Inventory implements OnInit {
   private api = inject(ApiService);
 
   items = signal<InventoryItem[]>([]);
+  archivedItems = signal<InventoryItem[]>([]);
+  archivedItemsLoaded = signal(false);
   categories = signal<Category[]>([]);
   unitTypes = signal<UnitType[]>([]);
+  branches = signal<BranchResponse[]>([]);
+  selectedItem = signal<InventoryItem | null>(null);
+  selectedItemBatches = signal<StockBatch[]>([]);
+  itemStockLoading = signal(false);
+  itemStockError = signal<string | null>(null);
+
+  branchItemQuantities = computed<BranchItemQuantity[]>(() => {
+    const quantities = new Map<number, { quantity: number; batchCount: number }>();
+    for (const batch of this.selectedItemBatches()) {
+      const current = quantities.get(batch.branchId) ?? { quantity: 0, batchCount: 0 };
+      current.quantity += batch.quantity;
+      current.batchCount += 1;
+      quantities.set(batch.branchId, current);
+    }
+
+    return this.branches().map((branch) => {
+      const stock = quantities.get(branch.id);
+      return {
+        branchId: branch.id,
+        branchName: branch.branchName || branch.name || `Branch #${branch.id}`,
+        quantity: stock?.quantity ?? 0,
+        batchCount: stock?.batchCount ?? 0,
+      };
+    });
+  });
 
   searchQuery = signal<string>('');
+  showArchived = signal(false);
   isDrawerOpen = signal<boolean>(false);
   isEditing = signal<boolean>(false);
 
@@ -30,8 +66,9 @@ export class Inventory implements OnInit {
   // Filtered computed list
   filteredItems = computed(() => {
     const q = this.searchQuery().toLowerCase().trim();
-    if (!q) return this.items();
-    return this.items().filter(
+    const source = this.showArchived() ? this.archivedItems() : this.items();
+    if (!q) return source;
+    return source.filter(
       (item) =>
         item.itemName.toLowerCase().includes(q) ||
         item.description.toLowerCase().includes(q) ||
@@ -62,6 +99,23 @@ export class Inventory implements OnInit {
     });
   }
 
+  setShowArchived(showArchived: boolean) {
+    this.showArchived.set(showArchived);
+    this.searchQuery.set('');
+    if (showArchived && !this.archivedItemsLoaded()) {
+      this.api.getArchivedInventory().subscribe({
+        next: (items) => {
+          this.archivedItems.set(items);
+          this.archivedItemsLoaded.set(true);
+        },
+        error: (error) => {
+          console.error('Failed to load archived inventory items:', error);
+          alert(error?.error?.detail || 'Failed to load archived inventory items.');
+        },
+      });
+    }
+  }
+
   openCreateModal() {
     this.isEditing.set(false);
     this.currentItem.set(this.getEmptyItem());
@@ -76,6 +130,40 @@ export class Inventory implements OnInit {
     this.selectedCategoryId.set(item.category.categoryId ?? null);
     this.selectedUnitTypeId.set(item.unitType.unitTypeId ?? null);
     this.isDrawerOpen.set(true);
+  }
+
+  openItemStock(item: InventoryItem) {
+    if (!item.id) return;
+
+    this.selectedItem.set(item);
+    this.selectedItemBatches.set([]);
+    this.itemStockError.set(null);
+    this.itemStockLoading.set(true);
+
+    forkJoin({
+      batches: this.api.getStockBatchesByItem(item.id),
+      branches: this.api.getAllBranches(),
+    }).subscribe({
+      next: ({ batches, branches }) => {
+        this.selectedItemBatches.set(batches);
+        this.branches.set(branches);
+      },
+      error: (error) => {
+        console.error(`Failed to load branch quantities for inventory item ${item.id}:`, error);
+        this.itemStockError.set(
+          error?.error?.detail || error?.error?.message || error?.message ||
+            'Could not load this item’s branch quantities.',
+        );
+        this.itemStockLoading.set(false);
+      },
+      complete: () => this.itemStockLoading.set(false),
+    });
+  }
+
+  closeItemStock() {
+    this.selectedItem.set(null);
+    this.selectedItemBatches.set([]);
+    this.itemStockError.set(null);
   }
 
   closeModal() {
@@ -119,14 +207,47 @@ export class Inventory implements OnInit {
     }
   }
 
-  deleteItem(id?: number) {
-    if (!id || !confirm('Are you sure you want to delete this inventory item?')) return;
+  archiveItem(id?: number) {
+    if (!id || !confirm('Archive this inventory item? It will be hidden from active lists, and its history will be preserved.')) return;
 
-    this.api.deleteInventoryItem(id).subscribe({
-      next: (val) => {
-        alert(val);
-        this.items.update((prev) => prev.filter((i) => i.id !== id))},
-      error: (err) => alert(err?.error?.message || 'Failed to delete item'),
+    this.api.archiveInventoryItem(id).subscribe({
+      next: (message) => {
+        const item = this.items().find((current) => current.id === id);
+        this.items.update((current) => current.filter((currentItem) => currentItem.id !== id));
+        if (item && this.archivedItemsLoaded()) {
+          this.archivedItems.update((current) => [{ ...item, archived: true }, ...current]);
+        }
+        alert(message || 'Inventory item archived successfully.');
+      },
+      error: (err) => {
+        console.error(`Failed to archive inventory item ${id}:`, err);
+        alert(
+          err?.error?.detail ||
+            err?.error?.message ||
+            err?.message ||
+            'Failed to archive item.',
+        );
+      },
+    });
+  }
+
+  restoreItem(id?: number) {
+    if (!id || !confirm('Restore this inventory item to active inventory?')) return;
+
+    this.api.restoreInventoryItem(id).subscribe({
+      next: (message) => {
+        const item = this.archivedItems().find((current) => current.id === id);
+        this.archivedItems.update((current) => current.filter((currentItem) => currentItem.id !== id));
+        if (item) {
+          this.archivedItemsLoaded.set(true);
+          this.items.update((current) => [...current, { ...item, archived: false }]);
+        }
+        alert(message || 'Inventory item restored successfully.');
+      },
+      error: (error) => {
+        console.error(`Failed to restore inventory item ${id}:`, error);
+        alert(error?.error?.detail || error?.message || 'Failed to restore item.');
+      },
     });
   }
 

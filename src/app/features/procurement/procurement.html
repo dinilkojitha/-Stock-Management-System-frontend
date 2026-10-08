@@ -1,340 +1,1286 @@
 <div class="space-y-6 max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
 
-  <!-- Header & Tabs -->
+  <!-- HEADER -->
   <div class="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 border-b border-slate-200 pb-4">
+
     <div>
-      <h1 class="text-2xl font-bold tracking-tight text-slate-900">Procurement & Sourcing</h1>
-      <p class="text-xs text-slate-500">Manage orders, evaluate suppliers, and compare quotations.</p>
+      <h1 class="text-2xl font-bold tracking-tight text-slate-900">
+        Procurement & Sourcing
+      </h1>
+
+      <p class="text-xs text-slate-500">
+        Manage orders, suppliers, quotations and receiving.
+      </p>
     </div>
 
     <div class="flex bg-slate-100 p-1 rounded-lg">
-      <button (click)="setTab('orders')" [class.bg-white]="activeTab() === 'orders'" [class.shadow-sm]="activeTab() === 'orders'" class="px-4 py-1.5 text-sm font-medium rounded-md text-slate-700 transition">Orders</button>
-      <button (click)="setTab('suppliers')" [class.bg-white]="activeTab() === 'suppliers'" [class.shadow-sm]="activeTab() === 'suppliers'" class="px-4 py-1.5 text-sm font-medium rounded-md text-slate-700 transition">Suppliers</button>
-      <button (click)="setTab('quotations')" [class.bg-white]="activeTab() === 'quotations'" [class.shadow-sm]="activeTab() === 'quotations'" class="px-4 py-1.5 text-sm font-medium rounded-md text-slate-700 transition">Quotations</button>
+
+      <button
+        (click)="setTab('orders')"
+        [class.bg-white]="activeTab() === 'orders'"
+        class="px-4 py-1.5 text-sm font-medium rounded-md">
+        Orders
+      </button>
+
+      <button
+        (click)="setTab('suppliers')"
+        [class.bg-white]="activeTab() === 'suppliers'"
+        class="px-4 py-1.5 text-sm font-medium rounded-md">
+        Suppliers
+      </button>
+
+      <button
+        (click)="setTab('quotations')"
+        [class.bg-white]="activeTab() === 'quotations'"
+        class="px-4 py-1.5 text-sm font-medium rounded-md">
+        Quotations
+      </button>
+
     </div>
   </div>
 
-  <!-- ==================== ORDERS TAB ==================== -->
+
+  <!-- ===================================================== -->
+  <!-- ORDERS -->
+  <!-- ===================================================== -->
+
   @if (activeTab() === 'orders') {
+
     <div class="space-y-4">
+
       <div class="flex justify-end">
-        <button (click)="activeModal.set('order')" class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition shadow-sm">+ New Order</button>
+
+        <button
+          (click)="openCreateOrder()"
+          class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-4 py-2 rounded-lg">
+
+          + New Order
+
+        </button>
+
       </div>
 
+
       <div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-        <table class="w-full text-left border-collapse text-xs">
-          <thead class="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold uppercase tracking-wider">
+
+        <table class="w-full text-left text-xs">
+
+          <thead class="bg-slate-50 border-b border-slate-200">
+
           <tr>
+
             <th class="py-3 px-4">PO ID</th>
             <th class="py-3 px-4">Supplier</th>
-            <th class="py-3 px-4">Date</th>
+            <th class="py-3 px-4">Branch</th>
+            <th class="py-3 px-4">Expected</th>
             <th class="py-3 px-4">Status</th>
-            <th class="py-3 px-4 text-right">Total Cost</th>
+            <th class="py-3 px-4 text-right">Total</th>
             <th class="py-3 px-4 text-center">Actions</th>
+
           </tr>
+
           </thead>
+
           <tbody class="divide-y divide-slate-100">
+
             @for (o of orders(); track o.id) {
-              <tr class="hover:bg-slate-50 transition">
-                <td class="py-3 px-4 font-mono font-medium">#PO-{{ o.id }}</td>
-                <td class="py-3 px-4 font-semibold text-slate-900">{{ o.supplierName }}</td>
-                <td class="py-3 px-4 text-slate-500">{{ o.orderDate | date:'mediumDate' }}</td>
+
+              <tr class="hover:bg-slate-50">
+
+                <td class="py-3 px-4 font-mono">
+                  #PO-{{ o.id }}
+                </td>
+
+                <td class="py-3 px-4 font-semibold">
+                  {{ o.supplierName }}
+                </td>
+
                 <td class="py-3 px-4">
-                  <span class="px-2 py-0.5 rounded text-xs font-bold"
-                        [ngClass]="{'bg-emerald-100 text-emerald-700': o.status === 'DELIVERED', 'bg-amber-100 text-amber-700': o.status === 'DRAFT', 'bg-indigo-100 text-indigo-700': o.status !== 'DELIVERED' && o.status !== 'DRAFT'}">
+                  {{ o.branchName || 'Not assigned' }}
+                </td>
+
+                <td class="py-3 px-4">
+                  {{ o.expectedDeliveryDate | date:'mediumDate' }}
+                </td>
+
+                <td class="py-3 px-4">
+
+                  <span class="px-2 py-1 rounded text-xs font-bold"
+                        [ngClass]="{
+                      'bg-emerald-100 text-emerald-700':
+                        o.status === 'DELIVERED',
+
+                      'bg-amber-100 text-amber-700':
+                        o.status === 'DELAYED',
+
+                      'bg-blue-100 text-blue-700':
+                        o.status === 'SHIPPED',
+
+                      'bg-purple-100 text-purple-700':
+                        o.status === 'PARTIALLY_RECEIVED',
+
+                      'bg-slate-100 text-slate-700':
+                        o.status === 'PENDING'
+                    }">
+
                     {{ o.status }}
+
                   </span>
+
                 </td>
-                <td class="py-3 px-4 text-right font-medium">${{ o.totalCost.toFixed(2) }}</td>
-                <td class="py-3 px-4 text-center">
-                  @if (o.status !== 'DELIVERED') {
-                    <button (click)="openDeliveryModal(o.id)" class="text-indigo-600 hover:underline font-medium">Update Delivery</button>
-                  }
+
+                <td class="py-3 px-4 text-right font-medium">
+
+                  {{ o.totalCost | number:'1.2-2' }}
+
                 </td>
+
+                <td class="py-3 px-4">
+
+                  <div class="flex justify-center gap-3">
+
+                    <button
+                      (click)="openOrderDetails(o.id)"
+                      class="text-indigo-600 hover:underline">
+
+                      Details
+
+                    </button>
+
+
+                    @if (
+                      o.status !== 'DELIVERED' &&
+                      o.status !== 'PARTIALLY_RECEIVED'
+                      ) {
+
+                      <button
+                        (click)="openDeliveryModal(o.id)"
+                        class="text-amber-600 hover:underline">
+
+                        Delivery
+
+                      </button>
+
+                    }
+
+
+                    @if (
+                      o.status !== 'DELIVERED'
+                      ) {
+
+                      <button
+                        (click)="openReceiveModal(o)"
+                        class="text-emerald-600 hover:underline">
+
+                        Receive
+
+                      </button>
+
+                    }
+
+                  </div>
+
+                </td>
+
               </tr>
+
             } @empty {
-              <tr><td colspan="6" class="p-8 text-center text-slate-400">No orders found.</td></tr>
+
+              <tr>
+
+                <td
+                  colspan="7"
+                  class="p-8 text-center text-slate-400">
+
+                  No orders found.
+
+                </td>
+
+              </tr>
+
             }
+
           </tbody>
+
         </table>
+
       </div>
+
     </div>
   }
 
-  <!-- ==================== SUPPLIERS TAB ==================== -->
+
+  <!-- ===================================================== -->
+  <!-- SUPPLIERS -->
+  <!-- ===================================================== -->
+
   @if (activeTab() === 'suppliers') {
+
     <div class="space-y-4">
+
       <div class="flex justify-end">
-        <button (click)="activeModal.set('supplier')" class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition shadow-sm">+ Register Supplier</button>
+
+        <button
+          (click)="openCreateSupplier()"
+          class="bg-indigo-600 text-white px-4 py-2 rounded-lg">
+
+          + Register Supplier
+
+        </button>
+
       </div>
+
 
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+
         @for (s of suppliers(); track s.id) {
-          <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-3">
-            <div class="flex justify-between items-start">
-              <h3 class="font-bold text-base text-slate-900">{{ s.companyName }}</h3>
-              <button (click)="deleteSupplier(s.id)" class="text-xs text-rose-500 hover:underline">Delete</button>
+
+          <div
+            class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+
+            <div class="flex justify-between">
+
+              <h3 class="font-bold">
+                {{ s.companyName }}
+              </h3>
+
+              <span class="text-xs text-slate-400">
+                #{{ s.id }}
+              </span>
+
             </div>
-            <div class="text-xs text-slate-600 space-y-1">
-              <p>👤 {{ s.contactPerson }}</p>
-              <p>✉️ {{ s.email }}</p>
-              <p>📞 {{ s.phoneNumber }}</p>
+
+
+            <div class="text-xs text-slate-600 space-y-1 mt-3">
+
+              <p>👤 {{ s.contactPerson || 'N/A' }}</p>
+              <p>✉️ {{ s.email || 'N/A' }}</p>
+              <p>📞 {{ s.phoneNumber || 'N/A' }}</p>
+              <p>📍 {{ s.address || 'N/A' }}</p>
+
             </div>
+
+
+            <div class="flex gap-3 mt-4 pt-3 border-t">
+
+              <button
+                (click)="openEditSupplier(s)"
+                class="text-indigo-600 text-xs hover:underline">
+
+                Edit
+
+              </button>
+
+              <button
+                (click)="openEvaluation(s)"
+                class="text-purple-600 text-xs hover:underline">
+
+                Evaluate
+
+              </button>
+
+              <button
+                (click)="deleteSupplier(s.id)"
+                class="text-rose-600 text-xs hover:underline">
+
+                Delete
+
+              </button>
+
+            </div>
+
           </div>
-        } @empty {
-          <div class="col-span-full p-8 text-center border-2 border-dashed border-slate-200 rounded-xl">
-            <p class="text-sm text-slate-500">No suppliers registered.</p>
-          </div>
+
         }
+
       </div>
+
     </div>
+
   }
 
-  <!-- ==================== QUOTATIONS TAB ==================== -->
+
+  <!-- ===================================================== -->
+  <!-- QUOTATIONS -->
+  <!-- ===================================================== -->
+
   @if (activeTab() === 'quotations') {
+
     <div class="space-y-4">
-      <div class="flex justify-end">
-        <button (click)="activeModal.set('quotation')" class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition shadow-sm">+ Record Quotation</button>
+
+      <div class="flex flex-col sm:flex-row gap-2 justify-between">
+
+        <select
+          [(ngModel)]="quotationItemFilter"
+          (change)="loadQuotations()"
+          class="border rounded-lg px-3 py-2 text-sm">
+
+          <option [ngValue]="0">
+            All Items
+          </option>
+
+          @for (item of items(); track item.id) {
+
+            <option [ngValue]="item.id">
+              {{ item.itemName }}
+            </option>
+
+          }
+
+        </select>
+
+
+        <button
+          (click)="openCreateQuotation()"
+          class="bg-indigo-600 text-white px-4 py-2 rounded-lg">
+
+          + Record Quotation
+
+        </button>
+
       </div>
 
-      <div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-        <table class="w-full text-left border-collapse text-xs">
-          <thead class="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold uppercase tracking-wider">
+
+      <div class="bg-white border rounded-xl overflow-hidden">
+
+        <table class="w-full text-left text-xs">
+
+          <thead class="bg-slate-50">
+
           <tr>
-            <th class="py-3 px-4">Supplier</th>
-            <th class="py-3 px-4">Item</th>
-            <th class="py-3 px-4 text-right">Unit Cost</th>
-            <th class="py-3 px-4 text-center">Available Qty</th>
-            <th class="py-3 px-4">Valid Until</th>
-            <th class="py-3 px-4">Status</th>
+
+            <th class="p-3">Supplier</th>
+            <th class="p-3">Item</th>
+            <th class="p-3 text-right">Unit Cost</th>
+            <th class="p-3">Available</th>
+            <th class="p-3">Valid Until</th>
+            <th class="p-3">Status</th>
+
           </tr>
+
           </thead>
-          <tbody class="divide-y divide-slate-100">
+
+          <tbody class="divide-y">
+
             @for (q of quotations(); track q.id) {
-              <tr class="hover:bg-slate-50 transition">
-                <td class="py-3 px-4 font-semibold text-slate-900">{{ q.supplierName }}</td>
-                <td class="py-3 px-4">{{ q.itemName }}</td>
-                <td class="py-3 px-4 text-right font-medium text-emerald-600">${{ q.quotedUnitCost.toFixed(2) }}</td>
-                <td class="py-3 px-4 text-center">{{ q.availableQuantity }}</td>
-                <td class="py-3 px-4 text-slate-500">{{ q.validUntil | date:'shortDate' }}</td>
-                <td class="py-3 px-4"><span class="px-2 py-0.5 bg-slate-100 text-slate-700 rounded">{{ q.status }}</span></td>
+
+              <tr>
+
+                <td class="p-3 font-semibold">
+                  {{ q.supplierName }}
+                </td>
+
+                <td class="p-3">
+                  {{ q.itemName }}
+                </td>
+
+                <td class="p-3 text-right font-medium text-emerald-600">
+                  {{ q.quotedUnitCost | number:'1.2-2' }}
+                </td>
+
+                <td class="p-3">
+                  {{ q.availableQuantity }}
+                </td>
+
+                <td class="p-3">
+                  {{ q.validUntil | date:'mediumDate' }}
+                </td>
+
+                <td class="p-3">
+
+                  <span class="px-2 py-1 rounded bg-slate-100">
+                    {{ q.status }}
+                  </span>
+
+                </td>
+
               </tr>
-            } @empty {
-              <tr><td colspan="6" class="p-8 text-center text-slate-400">No quotations logged.</td></tr>
+
             }
+
           </tbody>
+
         </table>
+
       </div>
+
     </div>
+
   }
 
-  <!-- ==================== MODALS ==================== -->
 
-  <!-- Backdrop -->
+  <!-- ===================================================== -->
+  <!-- BACKDROP -->
+  <!-- ===================================================== -->
+
   @if (activeModal() !== 'none') {
-    <div class="fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-sm" (click)="activeModal.set('none')"></div>
+
+    <div
+      class="fixed inset-0 z-40 bg-slate-900/40"
+      (click)="activeModal.set('none')">
+    </div>
+
   }
 
-  <!-- Delivery Update Modal -->
+
+  <!-- ===================================================== -->
+  <!-- CREATE ORDER -->
+  <!-- ===================================================== -->
+
+  @if (activeModal() === 'order') {
+
+    <div class="fixed inset-y-0 right-0 z-50 w-full max-w-md bg-white shadow-2xl flex flex-col">
+
+      <div class="p-6 border-b flex justify-between">
+
+        <h2 class="font-bold text-lg">
+          Create Purchase Order
+        </h2>
+
+        <button
+          (click)="activeModal.set('none')">
+          ✕
+        </button>
+
+      </div>
+
+
+      <div class="p-6 overflow-y-auto flex-1 space-y-4">
+
+        <div>
+
+          <label class="block mb-1">
+            Supplier
+          </label>
+
+          <select
+            [(ngModel)]="newOrder.supplierId"
+            class="w-full border rounded-lg p-2">
+
+            <option [ngValue]="0">
+              Select supplier
+            </option>
+
+            @for (s of suppliers(); track s.id) {
+
+              <option [ngValue]="s.id">
+                {{ s.companyName }}
+              </option>
+
+            }
+
+          </select>
+
+        </div>
+
+        <div>
+          <label for="order-branch" class="mb-1 block text-sm font-medium text-slate-700">
+            Destination branch
+          </label>
+          <select
+            id="order-branch"
+            [(ngModel)]="newOrder.branchId"
+            [disabled]="branchesLoading() || branches().length === 0"
+            class="w-full rounded-lg border border-slate-300 bg-white p-2.5 text-sm text-slate-900 disabled:bg-slate-100">
+            <option [ngValue]="0" disabled>
+              {{ branchesLoading() ? 'Loading branches…' : 'Select a branch' }}
+            </option>
+            @for (branch of branches(); track branch.id) {
+              <option [ngValue]="branch.id">{{ branch.name }} — {{ branch.location }}</option>
+            }
+          </select>
+          @if (branchLoadError()) {
+            <p role="alert" class="mt-1 text-xs text-rose-600">{{ branchLoadError() }}</p>
+          }
+        </div>
+
+        <div>
+
+          <label class="block mb-1">
+            Expected Delivery
+          </label>
+
+          <input
+            type="date"
+            [(ngModel)]="newOrder.expectedDeliveryDate"
+            class="w-full border rounded-lg p-2">
+
+        </div>
+
+
+        <div class="bg-slate-50 p-4 rounded-lg space-y-3">
+          <h3 class="font-bold">
+            Order Item
+          </h3>
+          <select
+            [(ngModel)]="newOrderItem.itemId"
+            class="w-full border rounded p-2">
+            <option [ngValue]="0">
+              Select item
+            </option>
+            @for (item of items(); track item.id) {
+              <option [ngValue]="item.id">
+                {{ item.itemName }}
+              </option>
+            }
+          </select>
+
+
+          <input
+            type="number"
+            min="0.01"
+            step="0.01"
+            [(ngModel)]="newOrderItem.quantity"
+            placeholder="Quantity"
+            class="w-full border rounded p-2">
+
+
+          <button
+            (click)="addOrderItem()"
+            class="w-full border border-indigo-600 text-indigo-600 rounded p-2">
+
+            Add Item
+
+          </button>
+
+        </div>
+
+
+        @for (item of newOrder.items; track $index) {
+
+          <div class="flex justify-between bg-slate-100 p-2 rounded">
+
+            <span>
+              {{ getInventoryItemName(item.itemId) }}
+              × {{ item.quantity }}
+            </span>
+
+            <button
+              (click)="removeOrderItem($index)"
+              class="text-rose-500">
+
+              Remove
+
+            </button>
+
+          </div>
+
+        }
+
+      </div>
+
+
+      <div class="p-6 border-t flex gap-2">
+
+        <button
+          (click)="activeModal.set('none')"
+          class="flex-1 border rounded-lg p-2">
+
+          Cancel
+
+        </button>
+
+        <button
+          (click)="submitOrder()"
+          [disabled]="newOrder.items.length === 0"
+          class="flex-1 bg-indigo-600 disabled:opacity-50 text-white rounded-lg p-2">
+
+          Create Order
+
+        </button>
+
+      </div>
+
+    </div>
+
+  }
+
+
+  <!-- ===================================================== -->
+  <!-- DELIVERY STATUS -->
+  <!-- ===================================================== -->
+
   @if (activeModal() === 'delivery') {
-    <div class="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
-      <div class="bg-white w-full max-w-sm rounded-xl shadow-2xl p-6 pointer-events-auto border border-slate-200">
-        <h2 class="text-lg font-bold text-slate-900 mb-4">Update Delivery Status</h2>
-        <div class="space-y-4 text-sm">
+
+    <div class="fixed inset-0 z-50 flex items-center justify-center">
+
+      <div class="bg-white rounded-xl p-6 w-full max-w-md shadow-2xl">
+
+        <h2 class="font-bold text-lg mb-4">
+          Update Delivery Status
+        </h2>
+
+
+        <select
+          [(ngModel)]="deliveryUpdate.status"
+          class="w-full border rounded-lg p-2">
+
+          <option value="PENDING">
+            PENDING
+          </option>
+
+          <option value="SHIPPED">
+            SHIPPED
+          </option>
+
+          <option value="DELAYED">
+            DELAYED
+          </option>
+
+        </select>
+
+
+        <p class="text-xs text-slate-500 mt-3">
+          DELIVERED is set automatically after the order
+          is fully received through the receiving workflow.
+        </p>
+
+
+        <div class="flex gap-2 mt-5">
+
+          <button
+            (click)="activeModal.set('none')"
+            class="flex-1 border rounded-lg p-2">
+
+            Cancel
+
+          </button>
+
+          <button
+            (click)="submitDeliveryUpdate()"
+            class="flex-1 bg-indigo-600 text-white rounded-lg p-2">
+
+            Update
+
+          </button>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  }
+
+
+  <!-- ===================================================== -->
+  <!-- RECEIVE ORDER -->
+  <!-- ===================================================== -->
+
+  @if (activeModal() === 'receive') {
+
+    <div class="fixed inset-0 z-50 flex justify-end bg-slate-900/40">
+      <div class="flex h-full w-full max-w-xl flex-col bg-white shadow-2xl">
+        <div class="flex items-start justify-between border-b border-slate-200 p-6">
           <div>
-            <label class="block font-medium text-slate-700 mb-1">Status</label>
-            <select [(ngModel)]="deliveryUpdate.status" class="w-full border rounded-lg p-2 focus:ring-2 focus:ring-indigo-600 outline-none">
-              <option value="SHIPPED">SHIPPED</option>
-              <option value="DELIVERED">DELIVERED</option>
-              <option value="DELAYED">DELAYED</option>
-            </select>
+            <h2 class="text-lg font-bold text-slate-900">Receive Purchase Order #{{ selectedOrderId }}</h2>
+            <p class="mt-1 text-sm text-slate-500">
+              {{ selectedOrder()?.supplierName }} · Record one item per receipt.
+            </p>
           </div>
-          <div>
-            <label class="block font-medium text-slate-700 mb-1">Actual Delivery Date</label>
-            <input type="date" [(ngModel)]="deliveryUpdate.actualDeliveryDate" class="w-full border rounded-lg p-2 focus:ring-2 focus:ring-indigo-600 outline-none">
+          <button
+            type="button"
+            aria-label="Close receive purchase order"
+            (click)="activeModal.set('none')"
+            class="rounded-lg px-2 py-1 text-slate-500 hover:bg-slate-100">
+            ✕
+          </button>
+        </div>
+
+        <div class="flex-1 space-y-5 overflow-y-auto p-6">
+          <div class="rounded-lg border border-indigo-100 bg-indigo-50 p-4">
+            <p class="text-sm font-semibold text-indigo-900">Remaining items on this order</p>
+            @if (receivableOrderItems().length > 0) {
+              <ul class="mt-2 space-y-1 text-sm text-indigo-800">
+                @for (item of receivableOrderItems(); track item.itemId) {
+                  <li class="flex justify-between gap-3">
+                    <span>{{ item.itemName }}</span>
+                    <span class="font-medium">{{ item.quantity - item.receivedQuantity }} remaining</span>
+                  </li>
+                }
+              </ul>
+            } @else {
+              <p class="mt-2 text-sm text-indigo-800">All items on this order have been received.</p>
+            }
           </div>
-          <div class="flex gap-2 pt-2">
-            <button (click)="activeModal.set('none')" class="flex-1 py-2 border rounded-lg text-slate-600 font-medium">Cancel</button>
-            <button (click)="submitDeliveryUpdate()" class="flex-1 py-2 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700">Save</button>
+
+          @if (branchLoadError() && !selectedOrder()?.branchId) {
+            <div role="alert" class="rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">
+              {{ branchLoadError() }}
+            </div>
+          }
+
+          <div class="grid gap-4 sm:grid-cols-2">
+            <div class="rounded-lg bg-slate-50 p-3">
+              <p class="text-xs font-medium text-slate-500">Receiving branch</p>
+              <p class="mt-1 text-sm font-semibold text-slate-800">
+                {{ selectedOrder()?.branchName || 'Choose a branch for this older order' }}
+              </p>
+            </div>
+
+            <div>
+              <label for="receive-date" class="mb-1 block text-sm font-medium text-slate-700">
+                Actual delivery date
+              </label>
+              <input
+                id="receive-date"
+                type="date"
+                [(ngModel)]="receiveForm.actualDeliveryDate"
+                class="w-full rounded-lg border border-slate-300 p-2.5 text-sm">
+            </div>
           </div>
+
+          @if (!selectedOrder()?.branchId) {
+            <div>
+              <label for="legacy-receive-branch" class="mb-1 block text-sm font-medium text-slate-700">
+                Branch for this existing order
+              </label>
+              <select
+                id="legacy-receive-branch"
+                [(ngModel)]="receiveForm.branchId"
+                [disabled]="branchesLoading() || branches().length === 0"
+                class="w-full rounded-lg border border-slate-300 bg-white p-2.5 text-sm text-slate-900 disabled:bg-slate-100">
+                <option [ngValue]="0" disabled>
+                  {{ branchesLoading() ? 'Loading branches…' : 'Select a branch' }}
+                </option>
+                @for (branch of branches(); track branch.id) {
+                  <option [ngValue]="branch.id">{{ branch.name }} — {{ branch.location }}</option>
+                }
+              </select>
+              <p class="mt-1 text-xs text-slate-500">This order was created before branch selection was added.</p>
+            </div>
+          }
+
+          @if (receivableOrderItems().length > 0) {
+            <section class="space-y-4 rounded-xl border border-slate-200 p-4">
+              <div>
+                <h3 class="font-semibold text-slate-900">Item to receive</h3>
+                <p class="mt-1 text-xs text-slate-500">Submit one item now. Submit another receipt for a different item or batch.</p>
+              </div>
+
+              <div>
+                <label for="receive-item" class="mb-1 block text-sm font-medium text-slate-700">Purchase order item</label>
+                <select
+                  id="receive-item"
+                  [(ngModel)]="newReceiptItem.itemId"
+                  class="w-full rounded-lg border border-slate-300 bg-white p-2.5 text-sm text-slate-900">
+                  <option [ngValue]="0" disabled>Select an item</option>
+                  @for (item of receivableOrderItems(); track item.itemId) {
+                    <option [ngValue]="item.itemId">
+                      {{ item.itemName }} — {{ item.quantity - item.receivedQuantity }} remaining
+                    </option>
+                  }
+                </select>
+                @if (newReceiptItem.itemId) {
+                  <p class="mt-2 rounded-md bg-emerald-50 p-2 text-sm text-emerald-800">
+                    This receipt will record {{ remainingQuantity(newReceiptItem.itemId) }} units
+                    (the full remaining quantity for this item).
+                  </p>
+                }
+              </div>
+
+              <div class="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label for="receive-manufacture-date" class="mb-1 block text-sm font-medium text-slate-700">Manufacture date <span class="font-normal text-slate-400">(optional)</span></label>
+                  <input
+                    id="receive-manufacture-date"
+                    type="date"
+                    [(ngModel)]="newReceiptItem.manufactureDate"
+                    class="w-full rounded-lg border border-slate-300 p-2.5 text-sm">
+                </div>
+                <div>
+                  <label for="receive-expiry-date" class="mb-1 block text-sm font-medium text-slate-700">Expiry date <span class="font-normal text-slate-400">(optional)</span></label>
+                  <input
+                    id="receive-expiry-date"
+                    type="date"
+                    [(ngModel)]="newReceiptItem.expiryDate"
+                    class="w-full rounded-lg border border-slate-300 p-2.5 text-sm">
+                </div>
+              </div>
+            </section>
+          }
+        </div>
+
+        <div class="flex gap-3 border-t border-slate-200 p-6">
+          <button
+            type="button"
+            (click)="activeModal.set('none')"
+            [disabled]="receiving()"
+            class="flex-1 rounded-lg border border-slate-300 p-2.5 font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50">
+            Cancel
+          </button>
+          <button
+            type="button"
+            (click)="submitReceipt()"
+            [disabled]="receiving() || (!!branchLoadError() && !selectedOrder()?.branchId) || (!selectedOrder()?.branchId && branchesLoading()) || receivableOrderItems().length === 0"
+            class="flex-1 rounded-lg bg-emerald-600 p-2.5 font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50">
+            {{ receiving() ? 'Recording receipt…' : 'Receive this item' }}
+          </button>
         </div>
       </div>
+
     </div>
+
   }
 
-  <!-- Slide Overs for Order / Supplier / Quotation creation -->
-  @if (activeModal() === 'order' || activeModal() === 'supplier' || activeModal() === 'quotation') {
-    <div class="fixed inset-y-0 right-0 z-50 w-full max-w-md bg-white shadow-2xl border-l border-slate-200 flex flex-col">
-      <div class="p-6 border-b border-slate-100 flex justify-between items-center">
-        <h2 class="text-lg font-bold text-slate-900">
-          @if(activeModal() === 'order') { Create Purchase Order }
-          @if(activeModal() === 'supplier') { Register Supplier }
-          @if(activeModal() === 'quotation') { Record Quotation }
-        </h2>
-        <button (click)="activeModal.set('none')" class="text-slate-400 hover:text-slate-600 text-xl">✕</button>
-      </div>
 
-      <div class="p-6 overflow-y-auto flex-1 text-sm space-y-4">
+  <!-- ===================================================== -->
+  <!-- ORDER DETAILS -->
+  <!-- ===================================================== -->
 
-        <!-- Order Form -->
-        @if (activeModal() === 'order') {
-          <div>
-            <label class="block font-medium text-slate-700 mb-1">Supplier</label>
-            <select
-              name="supplier"
-              required
-              [(ngModel)]="newOrder.supplierId"
-              class="w-full px-3 py-2 border rounded-lg border-slate-300 focus:ring-2 focus:ring-slate-900 focus:outline-none bg-white"
-            >
-              <option [ngValue]="null" disabled selected>Select a supplier</option>
-              <option *ngFor="let supplier of suppliers()" [value]="supplier.id">
-                {{ supplier.companyName }}
-              </option>
-            </select>
-          </div>
+  @if (activeModal() === 'orderDetails') {
 
-          <div>
-            <label class="block font-medium text-slate-700 mb-1">Expected Delivery (ISO Date)</label>
-            <input type="datetime-local" [(ngModel)]="newOrder.expectedDeliveryDate" class="w-full border rounded-lg p-2">
-          </div>
-          <hr>
-          <div class="bg-slate-50 p-3 rounded-lg border border-slate-200 space-y-3">
-            <h3 class="font-bold text-slate-700">Add Item to Order</h3>
-            <div class="grid grid-cols-1 gap-2">
-              <div>
-                <label class="block font-medium text-slate-700 ">Item Name</label>
-                <select
-                  name="item"
-                  required
-                  [(ngModel)]="newOrderItem.itemId"
-                  class="w-full px-3 py-2 border rounded-lg border-slate-300 focus:ring-2 focus:ring-slate-900 focus:outline-none bg-white"
-                >
-                  <option [ngValue]="null" disabled selected>Select a item</option>
-                  <option *ngFor="let item of items()" [value]="item.id">
-                    {{ item.itemName }}
-                  </option>
-                </select>
-              </div>
-              <div class="grid grid-cols-2 gap-2">
-                <div>
-                  <label class="block font-medium text-slate-700 ">Quantity</label>
-                  <input type="number" placeholder="Quantity" [(ngModel)]="newOrderItem.quantity" class="border rounded p-1.5 text-xs">
-                </div>
-                <div>
-                  <label class="block font-medium text-slate-700 ">Unit Cost ($)</label>
-                  <input type="number" placeholder="Unit Cost $" [(ngModel)]="newOrderItem.unitCost" class="border rounded p-1.5 text-xs col-span-2">
-                </div>
-              </div>
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
 
+      <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl">
+
+        @if (selectedOrder(); as order) {
+
+          <div class="p-6 border-b flex justify-between">
+
+            <div>
+
+              <h2 class="font-bold text-lg">
+                Purchase Order #{{ order.id }}
+              </h2>
+
+              <p class="text-sm text-slate-500">
+                {{ order.supplierName }}
+              </p>
 
             </div>
-            <button (click)="addOrderItem()" class="w-full text-xs font-semibold text-indigo-600 border border-indigo-600 rounded p-1.5 hover:bg-indigo-50">Add Item To List</button>
-          </div>
-          @if(newOrder.items.length > 0) {
-            <ul class="text-xs space-y-1">
-              @for(i of newOrder.items; track $index) {
-                <li class="flex justify-between bg-slate-100 p-2 rounded text-slate-700">
-                  <span>Item ID: {{i.itemId}} (x{{i.quantity}})</span>
-                  <span class="font-medium">${{i.unitCost * i.quantity}}</span>
-                </li>
-              }
-            </ul>
-          }
-        }
 
-        <!-- Supplier Form -->
-        @if (activeModal() === 'supplier') {
-          <div><label class="block mb-1">Company Name</label><input [(ngModel)]="newSupplier.companyName" class="w-full border p-2 rounded-lg"></div>
-          <div><label class="block mb-1">Contact Person</label><input [(ngModel)]="newSupplier.contactPerson" class="w-full border p-2 rounded-lg"></div>
-          <div><label class="block mb-1">Email</label><input type="email" [(ngModel)]="newSupplier.email" class="w-full border p-2 rounded-lg"></div>
-          <div><label class="block mb-1">Phone</label><input [(ngModel)]="newSupplier.phoneNumber" class="w-full border p-2 rounded-lg"></div>
-          <div><label class="block mb-1">Address</label><textarea [(ngModel)]="newSupplier.address" class="w-full border p-2 rounded-lg"></textarea></div>
-        }
+            <button
+              (click)="activeModal.set('none')">
+              ✕
+            </button>
 
-
-
-
-
-
-
-
-        <!-- Quotation Form -->
-        @if (activeModal() === 'quotation') {
-          <div>
-            <label class="block font-medium text-slate-700 mb-1">Quotation</label>
-            <select
-              name="supplier"
-              required
-              [(ngModel)]="newOrder.supplierId"
-              class="w-full px-3 py-2 border rounded-lg border-slate-300 focus:ring-2 focus:ring-slate-900 focus:outline-none bg-white"
-            >
-              <option [ngValue]="null" disabled selected>Select a supplier</option>
-              <option *ngFor="let supplier of suppliers()" [value]="supplier.id">
-                {{ supplier.companyName }}
-              </option>
-            </select>
           </div>
 
-          <hr>
-          <div class="bg-slate-50 p-3 rounded-lg border border-slate-200 space-y-3">
-            <h3 class="font-bold text-slate-700">Add Item to Order</h3>
-            <div class="grid grid-cols-1 gap-2">
+
+          <div class="p-6 space-y-4">
+
+            <div class="grid grid-cols-3 gap-4 text-sm">
+
               <div>
-                <label class="block font-medium text-slate-700 ">Item Name</label>
-                <select
-                  name="item"
-                  required
-                  [(ngModel)]="newQuotationItem.itemId"
-                  class="w-full px-3 py-2 border rounded-lg border-slate-300 focus:ring-2 focus:ring-slate-900 focus:outline-none bg-white"
-                >
-                  <option [ngValue]="null" disabled selected>Select a item</option>
-                  <option *ngFor="let item of items()" [value]="item.id">
-                    {{ item.itemName }}
-                  </option>
-                </select>
-              </div>
-              <div class="grid grid-cols-2 gap-2">
-                <div>
-                  <label class="block font-medium text-slate-700 ">Quantity</label>
-                  <input type="number" placeholder="Quantity" [(ngModel)]="newQuotationItem.quantity" class="border rounded p-1.5 text-xs">
-                </div>
-                <div>
-                  <label class="block font-medium text-slate-700 ">Unit Cost ($)</label>
-                  <input type="number" placeholder="Unit Cost $" [(ngModel)]="newQuotationItem.unitCost" class="border rounded p-1.5 text-xs col-span-2">
-                </div>
+                <span class="text-slate-500">
+                  Status
+                </span>
+
+                <p class="font-semibold">
+                  {{ order.status }}
+                </p>
               </div>
 
+              <div>
+                <span class="text-slate-500">Destination branch</span>
+                <p class="font-semibold">{{ order.branchName || 'Not assigned' }}</p>
+              </div>
+
+              <div>
+                <span class="text-slate-500">
+                  Total
+                </span>
+
+                <p class="font-semibold">
+                  {{ order.totalCost | number:'1.2-2' }}
+                </p>
+              </div>
 
             </div>
-            <button (click)="addQuotationItem()" class="w-full text-xs font-semibold text-indigo-600 border border-indigo-600 rounded p-1.5 hover:bg-indigo-50">Add Item To List</button>
-          </div>
-          @if(newQuotation.items.length > 0) {
-            <ul class="text-xs space-y-1">
-              @for(i of newQuotation.items; track $index) {
-                <li class="flex justify-between bg-slate-100 p-2 rounded text-slate-700">
-                  <span>Item: {{i.itemId}} (x{{i.quantity}})</span>
-                  <span class="font-medium">${{i.unitCost * i.quantity}}</span>
-                </li>
-              }
-            </ul>
-          }
 
-<!--          <div><label class="block mb-1">Supplier ID</label><input type="number" [(ngModel)]="newQuotation.supplierId" class="w-full border p-2 rounded-lg"></div>-->
-<!--          <div><label class="block mb-1">Item ID</label><input type="number" [(ngModel)]="newQuotation.itemId" class="w-full border p-2 rounded-lg"></div>-->
-<!--          <div><label class="block mb-1">Quoted Unit Cost ($)</label><input type="number" [(ngModel)]="newQuotation.quotedUnitCost" class="w-full border p-2 rounded-lg"></div>-->
-<!--          <div><label class="block mb-1">Available Qty</label><input type="number" [(ngModel)]="newQuotation.availableQuantity" class="w-full border p-2 rounded-lg"></div>-->
-<!--          <div><label class="block mb-1">Valid Until (ISO)</label><input type="datetime-local" [(ngModel)]="newQuotation.validUntil" class="w-full border p-2 rounded-lg"></div>-->
+
+            <div>
+              <h3 class="font-bold mb-2">
+                Ordered Items ({{ order.items.length }})
+              </h3>
+
+              @if (order.items.length > 0) {
+                <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                  <table class="w-full text-left text-xs">
+                    <thead class="bg-slate-50 text-slate-500">
+                      <tr>
+                        <th class="p-3 font-semibold">Item</th>
+                        <th class="p-3 text-right font-semibold">Ordered</th>
+                        <th class="p-3 text-right font-semibold">Received</th>
+                        <th class="p-3 text-right font-semibold">Unit Cost</th>
+                        <th class="p-3 text-right font-semibold">Line Total</th>
+                      </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                      @for (item of order.items; track item.itemId) {
+                        <tr>
+                          <td class="p-3 font-medium text-slate-800">{{ item.itemName }}</td>
+                          <td class="p-3 text-right">{{ item.quantity }}</td>
+                          <td class="p-3 text-right">{{ item.receivedQuantity }}</td>
+                          <td class="p-3 text-right">{{ item.unitCost | number:'1.2-2' }}</td>
+                          <td class="p-3 text-right font-medium">
+                            {{ item.quantity * item.unitCost | number:'1.2-2' }}
+                          </td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              } @else {
+                <p class="text-sm text-slate-500">No items are recorded for this order.</p>
+              }
+            </div>
+
+          </div>
+
         }
 
       </div>
-      <div class="p-6 border-t border-slate-100 bg-slate-50 flex gap-2">
-        <button (click)="activeModal.set('none')" class="flex-1 py-2 bg-white border border-slate-300 rounded-lg font-medium text-slate-700">Cancel</button>
 
-        @if(activeModal() === 'order') { <button (click)="submitOrder()" [disabled]="newOrder.items.length === 0" class="flex-1 py-2 bg-indigo-600 disabled:opacity-50 text-white rounded-lg font-medium">Save Order</button> }
-        @if(activeModal() === 'supplier') { <button (click)="submitSupplier()" class="flex-1 py-2 bg-indigo-600 text-white rounded-lg font-medium">Save Supplier</button> }
-        @if(activeModal() === 'quotation') { <button (click)="submitQuotation()" class="flex-1 py-2 bg-indigo-600 text-white rounded-lg font-medium">Save Quotation</button> }
-      </div>
     </div>
+
+  }
+
+
+  <!-- ===================================================== -->
+  <!-- SUPPLIER CREATE / EDIT -->
+  <!-- ===================================================== -->
+
+  @if (activeModal() === 'supplier') {
+
+    <div class="fixed inset-y-0 right-0 z-50 w-full max-w-md bg-white shadow-2xl flex flex-col">
+
+      <div class="p-6 border-b flex justify-between">
+
+        <h2 class="font-bold text-lg">
+
+          {{ editingSupplierId
+          ? 'Edit Supplier'
+          : 'Register Supplier' }}
+
+        </h2>
+
+        <button
+          (click)="activeModal.set('none')">
+          ✕
+        </button>
+
+      </div>
+
+
+      <div class="p-6 space-y-4 flex-1 overflow-y-auto">
+
+        <input
+          [(ngModel)]="newSupplier.companyName"
+          placeholder="Company name"
+          class="w-full border rounded-lg p-2">
+
+        <input
+          [(ngModel)]="newSupplier.contactPerson"
+          placeholder="Contact person"
+          class="w-full border rounded-lg p-2">
+
+        <input
+          type="email"
+          [(ngModel)]="newSupplier.email"
+          placeholder="Email"
+          class="w-full border rounded-lg p-2">
+
+        <input
+          [(ngModel)]="newSupplier.phoneNumber"
+          placeholder="Phone number"
+          class="w-full border rounded-lg p-2">
+
+        <textarea
+          [(ngModel)]="newSupplier.address"
+          placeholder="Address"
+          class="w-full border rounded-lg p-2">
+        </textarea>
+
+      </div>
+
+
+      <div class="p-6 border-t flex gap-2">
+
+        <button
+          (click)="activeModal.set('none')"
+          class="flex-1 border rounded-lg p-2">
+
+          Cancel
+
+        </button>
+
+        <button
+          (click)="submitSupplier()"
+          class="flex-1 bg-indigo-600 text-white rounded-lg p-2">
+
+          {{ editingSupplierId
+          ? 'Update Supplier'
+          : 'Create Supplier' }}
+
+        </button>
+
+      </div>
+
+    </div>
+
+  }
+
+
+  <!-- ===================================================== -->
+  <!-- SUPPLIER EVALUATION -->
+  <!-- ===================================================== -->
+
+  @if (activeModal() === 'evaluation') {
+
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
+
+      <div class="bg-white rounded-xl shadow-2xl w-full max-w-md p-6">
+
+        @if (selectedSupplier(); as supplier) {
+
+          <h2 class="text-lg font-bold">
+            Evaluate {{ supplier.companyName }}
+          </h2>
+
+
+          @if (selectedSupplierRating(); as rating) {
+
+            <div class="bg-slate-50 rounded-lg p-3 mt-4">
+
+              <p class="font-semibold">
+                Current Rating:
+                {{ rating.averageRating | number:'1.1-2' }}/5
+              </p>
+
+              <p class="text-xs text-slate-500">
+                {{ rating.evaluationCount }}
+                evaluation(s)
+              </p>
+
+            </div>
+
+          }
+
+
+          <div class="space-y-3 mt-4">
+
+            <label class="block">
+
+              Overall Rating
+
+              <input
+                type="number"
+                min="1"
+                max="5"
+                [(ngModel)]="evaluation.rating"
+                class="w-full border rounded-lg p-2">
+
+            </label>
+
+
+            <label class="block">
+
+              Delivery Rating
+
+              <input
+                type="number"
+                min="1"
+                max="5"
+                [(ngModel)]="evaluation.deliveryRating"
+                class="w-full border rounded-lg p-2">
+
+            </label>
+
+
+            <label class="block">
+
+              Quality Rating
+
+              <input
+                type="number"
+                min="1"
+                max="5"
+                [(ngModel)]="evaluation.qualityRating"
+                class="w-full border rounded-lg p-2">
+
+            </label>
+
+
+            <textarea
+              [(ngModel)]="evaluation.comments"
+              placeholder="Comments"
+              class="w-full border rounded-lg p-2">
+            </textarea>
+
+          </div>
+
+
+          <div class="flex gap-2 mt-5">
+
+            <button
+              (click)="activeModal.set('none')"
+              class="flex-1 border rounded-lg p-2">
+
+              Cancel
+
+            </button>
+
+            <button
+              (click)="submitEvaluation()"
+              class="flex-1 bg-purple-600 text-white rounded-lg p-2">
+
+              Submit Evaluation
+
+            </button>
+
+          </div>
+
+        }
+
+      </div>
+
+    </div>
+
+  }
+
+
+  <!-- ===================================================== -->
+  <!-- QUOTATION -->
+  <!-- ===================================================== -->
+
+  @if (activeModal() === 'quotation') {
+
+    <div class="fixed inset-y-0 right-0 z-50 w-full max-w-md bg-white shadow-2xl flex flex-col">
+
+      <div class="p-6 border-b flex justify-between">
+
+        <h2 class="font-bold text-lg">
+          Record Quotation
+        </h2>
+
+        <button
+          (click)="activeModal.set('none')">
+          ✕
+        </button>
+
+      </div>
+
+
+      <div class="p-6 space-y-4 flex-1 overflow-y-auto">
+
+        <select
+          [(ngModel)]="newQuotation.supplierId"
+          class="w-full border rounded-lg p-2">
+
+          <option [ngValue]="0">
+            Select supplier
+          </option>
+
+          @for (s of suppliers(); track s.id) {
+
+            <option [ngValue]="s.id">
+              {{ s.companyName }}
+            </option>
+
+          }
+
+        </select>
+
+
+        <select
+          [(ngModel)]="newQuotation.itemId"
+          class="w-full border rounded-lg p-2">
+
+          <option [ngValue]="0">
+            Select item
+          </option>
+
+          @for (item of items(); track item.id) {
+
+            <option [ngValue]="item.id">
+              {{ item.itemName }}
+            </option>
+
+          }
+
+        </select>
+
+
+        <input
+          type="number"
+          min="0.01"
+          step="0.01"
+          [(ngModel)]="newQuotation.quotedUnitCost"
+          placeholder="Quoted unit cost"
+          class="w-full border rounded-lg p-2">
+
+
+        <input
+          type="number"
+          min="0.01"
+          step="0.01"
+          [(ngModel)]="newQuotation.availableQuantity"
+          placeholder="Available quantity"
+          class="w-full border rounded-lg p-2">
+
+
+        <input
+          type="date"
+          [(ngModel)]="newQuotation.validUntil"
+          class="w-full border rounded-lg p-2">
+
+
+        <select
+          [(ngModel)]="newQuotation.status"
+          class="w-full border rounded-lg p-2">
+
+          <option value="RECEIVED">
+            RECEIVED
+          </option>
+
+          <option value="PENDING">
+            PENDING
+          </option>
+
+          <option value="ACCEPTED">
+            ACCEPTED
+          </option>
+
+          <option value="REJECTED">
+            REJECTED
+          </option>
+
+        </select>
+
+
+        <textarea
+          [(ngModel)]="newQuotation.notes"
+          placeholder="Notes"
+          class="w-full border rounded-lg p-2">
+        </textarea>
+
+      </div>
+
+
+      <div class="p-6 border-t flex gap-2">
+
+        <button
+          (click)="activeModal.set('none')"
+          class="flex-1 border rounded-lg p-2">
+
+          Cancel
+
+        </button>
+
+        <button
+          (click)="submitQuotation()"
+          class="flex-1 bg-indigo-600 text-white rounded-lg p-2">
+
+          Save Quotation
+
+        </button>
+
+      </div>
+
+    </div>
+
   }
 
 </div>

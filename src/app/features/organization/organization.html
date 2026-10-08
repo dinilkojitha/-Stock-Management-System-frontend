@@ -16,19 +16,75 @@
       </div>
     </div>
 
+    <div class="flex flex-wrap items-center gap-2">
+      <button (click)="selectBranch(null)"
+        [class.bg-slate-900]="selectedBranchId() === null"
+        [class.text-white]="selectedBranchId() === null"
+        class="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium">
+        All branches
+      </button>
+      @for (b of branches(); track b.id) {
+        <button (click)="selectBranch(b.id)"
+          [class.bg-indigo-600]="selectedBranchId() === b.id"
+          [class.text-white]="selectedBranchId() === b.id"
+          class="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium">
+          {{ b.branchName || b.name }}
+        </button>
+      }
+    </div>
+
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       @for (b of branches(); track b.id) {
         <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-3 hover:shadow-md transition">
-          <div class="flex justify-between items-start">
-            <span class="text-xs font-mono font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
-              ID: {{ b.id }}
-            </span>
-            <button (click)="deleteBranch(b.id)" class="text-xs font-medium text-rose-600 hover:text-rose-800 hover:underline">Delete</button>
-          </div>
-          <div>
-            <h3 class="font-bold text-base text-slate-900">{{ b.name }}</h3>
-            <p class="text-sm text-slate-500">{{ b.location }} Facility</p>
-          </div>
+          @if (editingBranchId() === b.id) {
+            <div class="overflow-hidden rounded-xl border border-indigo-200 bg-gradient-to-br from-indigo-50/80 to-white shadow-inner">
+              <div class="flex items-center gap-3 border-b border-indigo-100 px-4 py-3">
+                <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-100 text-indigo-700">
+                  <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 20h4l10.5-10.5a2.12 2.12 0 0 0-4-4L4 16v4Z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" d="m13.5 6.5 4 4"/>
+                  </svg>
+                </span>
+                <div>
+                  <h3 class="text-sm font-semibold text-slate-900">Edit branch</h3>
+                  <p class="text-xs text-slate-500">Update branch details</p>
+                </div>
+              </div>
+              <div class="space-y-4 p-4">
+                <label class="block space-y-1.5">
+                  <span class="text-xs font-semibold text-slate-700">Branch name</span>
+                  <input [(ngModel)]="branchEdit.branchName" aria-label="Branch name"
+                    class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100">
+                </label>
+                <label class="block space-y-1.5">
+                  <span class="text-xs font-semibold text-slate-700">Location</span>
+                  <input [(ngModel)]="branchEdit.location" aria-label="Branch location"
+                    class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100">
+                </label>
+                <div class="flex justify-end gap-2 border-t border-slate-100 pt-3">
+                  <button (click)="cancelBranchEdit()" class="rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-slate-100">Cancel</button>
+                  <button (click)="saveBranchEdit()" class="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-3.5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-200">
+                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="m5 12 4 4L19 6"/>
+                    </svg>
+                    Save changes
+                  </button>
+                </div>
+              </div>
+            </div>
+          } @else {
+            <div class="flex justify-between items-start">
+              <button (click)="selectBranch(b.id)" class="text-left">
+                <span class="text-xs font-mono font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">ID: {{ b.id }}</span>
+                <h3 class="mt-2 font-bold text-base text-slate-900">{{ b.branchName || b.name }}</h3>
+                <p class="text-sm text-slate-500">{{ b.location }} Facility</p>
+              </button>
+              <div class="flex gap-3">
+                <button (click)="startBranchEdit(b)" class="text-xs font-medium text-indigo-600 hover:underline">Edit</button>
+                <button (click)="deleteBranch(b.id)" class="text-xs font-medium text-rose-600 hover:text-rose-800 hover:underline">Delete</button>
+              </div>
+            </div>
+          }
         </div>
       } @empty {
         <div class="col-span-1 md:col-span-3 p-8 text-center border-2 border-dashed border-slate-200 rounded-xl">
@@ -63,22 +119,74 @@
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      @for (d of departments(); track d.id) {
+      @for (d of visibleDepartments; track d.id) {
         <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-3 hover:shadow-md transition">
-          <div class="flex justify-between items-start">
-            <span class="text-xs font-mono font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
-              {{ d.branchName }}
-            </span>
-            <button (click)="deleteDepartment(d.id)" class="text-xs font-medium text-rose-600 hover:text-rose-800 hover:underline">Delete</button>
-          </div>
-          <div>
-            <h3 class="font-bold text-base text-slate-900">{{ d.departmentName }}</h3>
-            <p class="text-sm text-slate-500">{{ d.location }}</p>
-          </div>
+          @if (editingDepartmentId() === d.id) {
+            <div class="overflow-hidden rounded-xl border border-emerald-200 bg-gradient-to-br from-emerald-50/80 to-white shadow-inner">
+              <div class="flex items-center gap-3 border-b border-emerald-100 px-4 py-3">
+                <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700">
+                  <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 20h4l10.5-10.5a2.12 2.12 0 0 0-4-4L4 16v4Z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" d="m13.5 6.5 4 4"/>
+                  </svg>
+                </span>
+                <div>
+                  <h3 class="text-sm font-semibold text-slate-900">Edit department</h3>
+                  <p class="text-xs text-slate-500">Update department details and branch</p>
+                </div>
+              </div>
+              <div class="space-y-4 p-4">
+                <label class="block space-y-1.5">
+                  <span class="text-xs font-semibold text-slate-700">Department name</span>
+                  <input [(ngModel)]="departmentEdit.departmentName" aria-label="Department name"
+                    class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100">
+                </label>
+                <label class="block space-y-1.5">
+                  <span class="text-xs font-semibold text-slate-700">Location</span>
+                  <input [(ngModel)]="departmentEdit.location" aria-label="Department location"
+                    class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100">
+                </label>
+                <label class="block space-y-1.5">
+                  <span class="text-xs font-semibold text-slate-700">Assigned branch</span>
+                  <select [(ngModel)]="departmentEdit.branchId" aria-label="Department branch"
+                    class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100">
+                    @for (b of branches(); track b.id) {
+                      <option [ngValue]="b.id">{{ b.branchName || b.name }}</option>
+                    }
+                  </select>
+                </label>
+                <div class="flex justify-end gap-2 border-t border-slate-100 pt-3">
+                  <button (click)="cancelDepartmentEdit()" class="rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-slate-100">Cancel</button>
+                  <button (click)="saveDepartmentEdit()" class="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-3.5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 focus:outline-none focus:ring-4 focus:ring-emerald-200">
+                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="m5 12 4 4L19 6"/>
+                    </svg>
+                    Save changes
+                  </button>
+                </div>
+              </div>
+            </div>
+          } @else {
+            <div class="flex justify-between items-start">
+              <div>
+                <span class="text-xs font-mono font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
+                  {{ d.branchName }}
+                </span>
+                <h3 class="mt-2 font-bold text-base text-slate-900">{{ d.departmentName }}</h3>
+                <p class="text-sm text-slate-500">{{ d.location }}</p>
+              </div>
+              <div class="flex gap-3">
+                <button (click)="startDepartmentEdit(d)" class="text-xs font-medium text-indigo-600 hover:underline">Edit</button>
+                <button (click)="deleteDepartment(d.id)" class="text-xs font-medium text-rose-600 hover:text-rose-800 hover:underline">Delete</button>
+              </div>
+            </div>
+          }
         </div>
       } @empty {
         <div class="col-span-1 md:col-span-3 p-8 text-center border-2 border-dashed border-slate-200 rounded-xl">
-          <p class="text-sm text-slate-500">No departments found.</p>
+          <p class="text-sm text-slate-500">
+            {{ selectedBranchId() === null ? 'No departments found.' : 'No departments found for this branch.' }}
+          </p>
         </div>
       }
     </div>
