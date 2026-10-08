@@ -2,6 +2,7 @@ import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../core/services/api.service';
+import { AuthService } from '../../core/services/auth.service';
 import {
   AuditTransaction,
   CreateTransactionRequest,
@@ -17,6 +18,7 @@ import {
 })
 export class Audit implements OnInit {
   private api = inject(ApiService);
+  readonly auth = inject(AuthService);
 
   logs = signal<AuditTransaction[]>([]);
   inventoryItems = signal<InventoryItem[]>([]);
@@ -26,7 +28,7 @@ export class Audit implements OnInit {
   // Form Model matching Spring Boot constraints
   newTx: CreateTransactionRequest = {
     transactionType: 'ADJUSTMENT',
-    userUserid: { id: 1 }, // Default user ID (MUST exist in your DB)
+    userUserid: { id: 0 },
     item: { id: 0 },
     quantityDelta: 0,
     remarks: '',
@@ -52,7 +54,7 @@ export class Audit implements OnInit {
   openModal() {
     this.newTx = {
       transactionType: 'ADJUSTMENT',
-      userUserid: { id: 1 },
+      userUserid: { id: this.auth.session()?.id ?? 0 },
       item: { id: 0 },
       quantityDelta: 0,
       remarks: '',
@@ -75,20 +77,26 @@ export class Audit implements OnInit {
       return;
     }
 
-    this.api.createTransaction(this.newTx).subscribe({
+    const userId = this.auth.session()?.id;
+    if (!userId) {
+      alert('Your login session is missing a user ID. Sign in again and retry.');
+      return;
+    }
+
+    this.api.createTransaction({ ...this.newTx, userUserid: { id: userId } }).subscribe({
       next: () => {
         this.isModalOpen.set(false);
         this.loadData();
       },
       error: (err) => {
         console.error(err);
-        alert(
-          'Failed to log transaction. Ensure User ID ' +
-            this.newTx.userUserid.id +
-            ' exists in the database.',
-        );
+        alert(err?.error?.message || 'Failed to log transaction.');
       },
     });
+  }
+
+  get currentUserName(): string {
+    return this.auth.session()?.fullName || 'Current user';
   }
 
   deleteTransaction(id: number) {

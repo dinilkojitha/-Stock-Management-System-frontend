@@ -91,6 +91,15 @@ export interface InventoryItem {
   unitPrice: number;
 }
 
+export interface InventoryDashboardSummary {
+  totalItems: number;
+  totalQuantity: number;
+  lowStockItems: number;
+  expiredBatches: number;
+  expiringSoonBatches: number;
+  totalInventoryValue: number;
+}
+
 // --- STOCK DOMAIN ---
 export interface StockItem {
   id: number;
@@ -101,6 +110,17 @@ export interface StockItem {
   quantity: number;
   locationCode: string;
 }
+
+export interface StockBatch {
+  stockId: number;
+  quantity: number;
+  manufactureDate: string | null;
+  expiryDate: string | null;
+  branchId: number;
+  itemIds: number[];
+}
+
+export type StockBatchRequest = StockBatch;
 
 // --- DISTRIBUTION DOMAIN ---
 // export interface RequestItemDTO {

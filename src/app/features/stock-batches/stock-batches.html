@@ -1,0 +1,252 @@
+<main class="mx-auto max-w-7xl space-y-6 p-4 sm:p-6 lg:p-8">
+  <header class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+    <div>
+      <h1 class="text-2xl font-bold tracking-tight text-slate-900">Stock batches & expiry</h1>
+      <p class="mt-1 text-sm text-slate-500">
+        Record stock receipts by batch, update quantities, and monitor expiry dates.
+      </p>
+    </div>
+    <div class="flex gap-2">
+      <button
+        type="button"
+        (click)="loadAll()"
+        [disabled]="loading()"
+        class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50 disabled:opacity-60"
+      >
+        Refresh
+      </button>
+      <button
+        type="button"
+        (click)="openCreateModal()"
+        class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700"
+      >
+        Record receipt
+      </button>
+    </div>
+  </header>
+
+  @if (errorMessage()) {
+    <section role="alert" class="flex items-center justify-between rounded-lg border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">
+      <span>{{ errorMessage() }}</span>
+      <button type="button" (click)="loadAll()" class="font-semibold underline">Retry</button>
+    </section>
+  }
+
+  <section aria-label="Batch filters" class="grid gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:grid-cols-3">
+    <label class="text-sm font-medium text-slate-700">
+      Branch
+      <select
+        [ngModel]="branchFilter()"
+        (ngModelChange)="branchFilter.set(toNullableId($event))"
+        class="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2"
+      >
+        <option [ngValue]="null">All branches</option>
+        @for (branch of branches(); track branch.id) {
+          <option [ngValue]="branch.id">{{ branch.name || branch.branchName }}</option>
+        }
+      </select>
+    </label>
+    <label class="text-sm font-medium text-slate-700">
+      Inventory item
+      <select
+        [ngModel]="itemFilter()"
+        (ngModelChange)="itemFilter.set(toNullableId($event))"
+        class="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2"
+      >
+        <option [ngValue]="null">All items</option>
+        @for (item of inventoryItems(); track item.id) {
+          <option [ngValue]="item.id">{{ item.itemName }}</option>
+        }
+      </select>
+    </label>
+    <label class="text-sm font-medium text-slate-700">
+      Expiry
+      <select
+        [ngModel]="expiryFilter()"
+        (ngModelChange)="setExpiryFilter($event)"
+        class="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2"
+      >
+        <option value="all">All batches</option>
+        <option value="expiring">Expiring within 30 days</option>
+        <option value="expired">Expired</option>
+      </select>
+    </label>
+  </section>
+
+  <section class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+    @if (loading()) {
+      <p role="status" class="p-8 text-center text-sm text-slate-500">Loading stock batches...</p>
+    } @else {
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm">
+          <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+            <tr>
+              <th scope="col" class="px-4 py-3 font-semibold">Batch</th>
+              <th scope="col" class="px-4 py-3 font-semibold">Items</th>
+              <th scope="col" class="px-4 py-3 font-semibold">Branch</th>
+              <th scope="col" class="px-4 py-3 text-right font-semibold">Quantity</th>
+              <th scope="col" class="px-4 py-3 font-semibold">Manufactured</th>
+              <th scope="col" class="px-4 py-3 font-semibold">Expires</th>
+              <th scope="col" class="px-4 py-3 font-semibold">Status</th>
+              <th scope="col" class="px-4 py-3 text-right font-semibold">Actions</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            @for (batch of filteredBatches(); track batch.stockId) {
+              <tr>
+                <td class="px-4 py-3 font-mono font-semibold text-slate-900">#{{ batch.stockId }}</td>
+                <td class="px-4 py-3 text-slate-700">{{ getItemNames(batch.itemIds) }}</td>
+                <td class="px-4 py-3 text-slate-700">{{ getBranchName(batch.branchId) }}</td>
+                <td class="px-4 py-3 text-right font-semibold text-slate-900">{{ batch.quantity | number:'1.0-2' }}</td>
+                <td class="px-4 py-3 text-slate-600">{{ batch.manufactureDate || '—' }}</td>
+                <td class="px-4 py-3 text-slate-600">{{ batch.expiryDate || '—' }}</td>
+                <td class="px-4 py-3">
+                  <span
+                    class="rounded-full px-2 py-1 text-xs font-semibold"
+                    [ngClass]="{
+                      'bg-rose-100 text-rose-800': getExpiryStatus(batch.expiryDate) === 'Expired',
+                      'bg-amber-100 text-amber-800': getExpiryStatus(batch.expiryDate) === 'Expiring soon',
+                      'bg-emerald-100 text-emerald-800': getExpiryStatus(batch.expiryDate) === 'In date',
+                      'bg-slate-100 text-slate-600': getExpiryStatus(batch.expiryDate) === 'No expiry date' || getExpiryStatus(batch.expiryDate) === 'Unknown'
+                    }"
+                  >
+                    {{ getExpiryStatus(batch.expiryDate) }}
+                  </span>
+                </td>
+                <td class="space-x-3 px-4 py-3 text-right">
+                  <button type="button" (click)="openEditModal(batch)" class="font-semibold text-indigo-600 hover:text-indigo-800">
+                    Edit
+                  </button>
+                  <button type="button" (click)="deleteBatch(batch)" class="font-semibold text-rose-600 hover:text-rose-800">
+                    Delete
+                  </button>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="8" class="px-4 py-10 text-center text-slate-500">
+                  No stock batches match these filters.
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </section>
+
+  @if (modalOpen()) {
+    <div class="fixed inset-0 z-40 bg-slate-950/50 p-4" (click)="closeModal()"></div>
+    <section role="dialog" aria-modal="true" aria-labelledby="batch-form-title" class="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto p-4">
+      <form
+        (ngSubmit)="saveBatch()"
+        class="my-auto w-full max-w-xl space-y-4 rounded-2xl bg-white p-6 shadow-2xl"
+        (click)="$event.stopPropagation()"
+      >
+        <header class="flex items-center justify-between">
+          <div>
+            <h2 id="batch-form-title" class="text-lg font-bold text-slate-900">
+              {{ isEditing() ? 'Update stock batch' : 'Record stock receipt' }}
+            </h2>
+            <p class="mt-1 text-xs text-slate-500">A receipt increases the linked items' inventory totals.</p>
+          </div>
+          <button type="button" (click)="closeModal()" [disabled]="saving()" aria-label="Close" class="text-slate-500 hover:text-slate-800">
+            ✕
+          </button>
+        </header>
+
+        @if (formError()) {
+          <p role="alert" class="rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">
+            {{ formError() }}
+          </p>
+        }
+
+        <div class="grid gap-4 sm:grid-cols-2">
+          <label class="text-sm font-medium text-slate-700">
+            Batch ID
+            <input
+              type="number"
+              name="stockId"
+              required
+              min="1"
+              [(ngModel)]="form.stockId"
+              [readonly]="isEditing()"
+              class="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2"
+            />
+            @if (!isEditing()) {
+              <span class="mt-1 block text-xs font-normal text-slate-500">Enter an unused positive ID.</span>
+            }
+          </label>
+          <label class="text-sm font-medium text-slate-700">
+            Quantity received
+            <input
+              type="number"
+              name="quantity"
+              required
+              min="0"
+              step="any"
+              [(ngModel)]="form.quantity"
+              class="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2"
+            />
+          </label>
+          <label class="text-sm font-medium text-slate-700">
+            Branch
+            <select
+              name="branchId"
+              required
+              [(ngModel)]="form.branchId"
+              class="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2"
+            >
+              <option [ngValue]="0" disabled>Select a branch</option>
+              @for (branch of branches(); track branch.id) {
+                <option [ngValue]="branch.id">{{ branch.name || branch.branchName }}</option>
+              }
+            </select>
+          </label>
+          <label class="text-sm font-medium text-slate-700">
+            Inventory items
+            <select
+              name="itemIds"
+              multiple
+              required
+              [(ngModel)]="form.itemIds"
+              class="mt-1 block min-h-28 w-full rounded-lg border border-slate-300 bg-white px-3 py-2"
+            >
+              @for (item of inventoryItems(); track item.id) {
+                <option [ngValue]="item.id">{{ item.itemName }}</option>
+              }
+            </select>
+            <span class="mt-1 block text-xs font-normal text-slate-500">Use Ctrl or Command to select multiple items.</span>
+          </label>
+          <label class="text-sm font-medium text-slate-700">
+            Manufacture date
+            <input
+              type="date"
+              name="manufactureDate"
+              [(ngModel)]="form.manufactureDate"
+              class="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2"
+            />
+          </label>
+          <label class="text-sm font-medium text-slate-700">
+            Expiry date
+            <input
+              type="date"
+              name="expiryDate"
+              [(ngModel)]="form.expiryDate"
+              class="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2"
+            />
+          </label>
+        </div>
+
+        <footer class="flex justify-end gap-2 border-t border-slate-100 pt-4">
+          <button type="button" (click)="closeModal()" [disabled]="saving()" class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700">
+            Cancel
+          </button>
+          <button type="submit" [disabled]="saving()" class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-60">
+            {{ saving() ? 'Saving...' : isEditing() ? 'Save changes' : 'Save receipt' }}
+          </button>
+        </footer>
+      </form>
+    </section>
+  }
+</main>

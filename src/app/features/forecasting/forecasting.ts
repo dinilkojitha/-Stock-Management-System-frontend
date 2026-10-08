@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { forkJoin } from 'rxjs';
 import { ApiService } from '../../core/services/api.service';
+import { AuthService } from '../../core/services/auth.service';
 import {
   InventoryItem,
   PlanningRecommendation,
@@ -18,6 +19,7 @@ import {
 })
 export class Forecasting implements OnInit {
   private api = inject(ApiService);
+  readonly auth = inject(AuthService);
 
   // UI State
   activeTab = signal<'planning' | 'wastage' | 'database'>('planning');
@@ -31,7 +33,7 @@ export class Forecasting implements OnInit {
   wastageReport = signal<string>('Select an item to view report.');
   totalWastageText = signal<string>('--');
   wastageCostText = signal<string>('--');
-  wastageForm = { quantity: 1, reason: 'Expired', userId: 1 }; // Default user ID 1 (must exist in DB)
+  wastageForm = { quantity: 1, reason: 'Expired' };
 
   // Tab 3: Forecast DB
   forecastDbRows = signal<ParsedForecastDbRow[]>([]);
@@ -101,10 +103,16 @@ export class Forecasting implements OnInit {
       return;
     }
 
+    const userId = this.auth.session()?.id;
+    if (!userId) {
+      alert('Your login session is missing a user ID. Sign in again and retry.');
+      return;
+    }
+
     this.api
       .recordWastage(
         this.wastageItemId(),
-        this.wastageForm.userId,
+        userId,
         this.wastageForm.quantity,
         this.wastageForm.reason,
       )
@@ -117,7 +125,7 @@ export class Forecasting implements OnInit {
         },
         error: (err) =>
           alert(
-            'Failed to record wastage. Ensure User ID exists and Stock is sufficient.\n\nBackend Error:\n' +
+            'Failed to record wastage. Ensure the item has sufficient stock.\n\nBackend Error:\n' +
               err.message,
           ),
       });

@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import {
   InventoryItem,
+  InventoryDashboardSummary,
   Category,
   UnitType,
   StockTransferResponse,
@@ -34,6 +35,8 @@ import {
   Role,
   UserResponse,
   UserRequest,
+  StockBatch,
+  StockBatchRequest,
 } from '../../models/domain.models';
 
 @Injectable({ providedIn: 'root' })
@@ -149,6 +152,46 @@ export class ApiService {
   // --- Inventory Item Endpoints ---
   getInventory(): Observable<InventoryItem[]> {
     return this.http.get<InventoryItem[]>(`${this.base}/inventory-items`);
+  }
+
+  getStockBatches(): Observable<StockBatch[]> {
+    return this.http.get<StockBatch[]>(`${this.base}/stocks`);
+  }
+
+  getStockBatchesByBranch(branchId: number): Observable<StockBatch[]> {
+    return this.http.get<StockBatch[]>(`${this.base}/stocks/branch/${branchId}`);
+  }
+
+  getStockBatchesByItem(itemId: number): Observable<StockBatch[]> {
+    return this.http.get<StockBatch[]>(`${this.base}/stocks/item/${itemId}`);
+  }
+
+  getExpiringStockBatches(days = 30): Observable<StockBatch[]> {
+    return this.http.get<StockBatch[]>(`${this.base}/stocks/expiring`, { params: { days } });
+  }
+
+  getExpiredStockBatches(): Observable<StockBatch[]> {
+    return this.http.get<StockBatch[]>(`${this.base}/stocks/expired`);
+  }
+
+  createStockBatch(batch: StockBatchRequest): Observable<StockBatch> {
+    return this.http.post<StockBatch>(`${this.base}/stocks`, batch);
+  }
+
+  updateStockBatch(id: number, batch: StockBatchRequest): Observable<StockBatch> {
+    return this.http.put<StockBatch>(`${this.base}/stocks/${id}`, batch);
+  }
+
+  deleteStockBatch(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.base}/stocks/${id}`);
+  }
+
+  getInventoryDashboard(): Observable<InventoryDashboardSummary> {
+    return this.http.get<InventoryDashboardSummary>(`${this.base}/inventory/dashboard`);
+  }
+
+  getLowStockItems(): Observable<InventoryItem[]> {
+    return this.http.get<InventoryItem[]>(`${this.base}/inventory-items/low-stock`);
   }
 
   createInventoryItem(item: InventoryItem): Observable<InventoryItem> {

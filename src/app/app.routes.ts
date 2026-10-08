@@ -10,6 +10,8 @@ import { Organization } from './features/organization/organization';
 import { Forecasting } from './features/forecasting/forecasting';
 import { Audit } from './features/audit/audit';
 import { Login } from './features/login/login';
+import { Dashboard } from './features/dashboard/dashboard';
+import { StockBatches } from './features/stock-batches/stock-batches';
 import { roleGuard } from './core/services/role.guard';
 
 export const routes: Routes = [
@@ -19,7 +21,13 @@ export const routes: Routes = [
     path: 'app',
     component: ShellComponent,
     children: [
-      { path: '', redirectTo: 'inventory', pathMatch: 'full' },
+      { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
+      {
+        path: 'dashboard',
+        component: Dashboard,
+        canActivate: [roleGuard],
+        data: { feature: 'dashboard' },
+      },
       {
         path: 'inventory',
         component: Inventory,
@@ -35,6 +43,12 @@ export const routes: Routes = [
       {
         path: 'stock',
         component: Stock,
+        canActivate: [roleGuard],
+        data: { feature: 'stock' },
+      },
+      {
+        path: 'batches',
+        component: StockBatches,
         canActivate: [roleGuard],
         data: { feature: 'stock' },
       },

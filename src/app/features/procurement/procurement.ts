@@ -2,6 +2,7 @@ import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../core/services/api.service';
+import { AuthService } from '../../core/services/auth.service';
 import {
   OrderResponse,
   SupplierResponse,
@@ -22,6 +23,7 @@ import {
 })
 export class Procurement implements OnInit {
   private api = inject(ApiService);
+  private auth = inject(AuthService);
 
   // UI State
   activeTab = signal<'orders' | 'suppliers' | 'quotations'>('orders');
@@ -56,7 +58,7 @@ export class Procurement implements OnInit {
   // For Order Form
   newOrder: OrderRequest = {
     supplierId: 0,
-    createdByUserId: 2,
+    createdByUserId: this.auth.session()?.id ?? 0,
     expectedDeliveryDate: '',
     items: [],
   };
@@ -121,11 +123,21 @@ export class Procurement implements OnInit {
   }
 
   submitOrder() {
-    console.log('Submitting Order:', this.newOrder);
-    this.api.createOrder(this.newOrder).subscribe({
+    const createdByUserId = this.auth.session()?.id;
+    if (!createdByUserId) {
+      alert('Your login session is missing a user ID. Sign in again and retry.');
+      return;
+    }
+
+    this.api.createOrder({ ...this.newOrder, createdByUserId }).subscribe({
       next: () => {
         this.activeModal.set('none');
-        this.newOrder = { supplierId: 0, createdByUserId: 2, expectedDeliveryDate: '', items: [] };
+        this.newOrder = {
+          supplierId: 0,
+          createdByUserId,
+          expectedDeliveryDate: '',
+          items: [],
+        };
         this.loadData();
       },
       error: (err) => {

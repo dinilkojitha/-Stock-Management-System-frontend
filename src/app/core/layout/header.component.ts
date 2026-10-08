@@ -12,8 +12,8 @@ import { AuthService } from '../services/auth.service';
       </div>
       <div class="flex items-center gap-4">
         <div class="text-right">
-          <p class="text-xs font-bold text-slate-800">{{ auth.session()?.role || 'Admin' }}</p>
-          <p class="text-[10px] text-slate-400">{{ auth.session()?.role || 'ROLE_ADMIN' }}</p>
+          <p class="text-xs font-bold text-slate-800">{{ auth.session()?.fullName || 'User' }}</p>
+          <p class="text-[10px] text-slate-400">{{ auth.session()?.role?.name || 'No role' }}</p>
         </div>
         <button
           (click)="auth.logout()"

@@ -6,18 +6,9 @@ import {
   StockTransferCreateRequest,
   BranchResponse,
   InventoryItem,
-  Role,
 } from '../../models/domain.models';
 import { ApiService } from '../../core/services/api.service';
-import { Department } from '../../core/services/auth.service';
-export interface UserSession {
-  id: number | null;
-  fullName: string;
-  email: string;
-  phoneNumber: string;
-  role: Role;
-  department: Department;
-}
+import { AuthService } from '../../core/services/auth.service';
 @Component({
   selector: 'app-stock',
   standalone: true,
@@ -27,6 +18,7 @@ export interface UserSession {
 })
 export class Stock implements OnInit {
   private api = inject(ApiService);
+  private auth = inject(AuthService);
 
   // Data signals
   inventoryItems = signal<InventoryItem[]>([]);
@@ -43,7 +35,7 @@ export class Stock implements OnInit {
   newTransfer: StockTransferCreateRequest = {
     fromBranchId: 0,
     toBranchId: 0,
-    requestedById: 1, // Must exist in your DB User table
+    requestedById: 0,
     statusId: 1, // Must exist in your DB Status table (e.g., 1 = Pending)
     items: [],
   };
@@ -123,27 +115,17 @@ export class Stock implements OnInit {
   // private Integer statusId;
   // @NotEmpty
   // private List<TransferItemDto> items;
-  get session(): UserSession | null {
-    const raw = localStorage.getItem('stock_session');
-    if (!raw) return null;
-    try {
-      return JSON.parse(raw) as UserSession;
-    } catch {
-      return null;
-    }
-  }
-
   get currentUserId(): number {
-    return this.session?.id ?? 0;
+    return this.auth.session()?.id ?? 0;
   }
 
   get currentBranchId(): number {
-    return this.session?.department?.branch?.id ?? 1;
+    return this.auth.session()?.department?.branch?.id ?? 0;
   }
 
   openCreateModal() {
     this.newTransfer = {
-      fromBranchId: this.currentBranchId, // Automatically sets Branch 1
+      fromBranchId: this.currentBranchId,
       toBranchId: 0,
       requestedById: this.currentUserId, // Currently null in your JSON; check backend
       statusId: 1,
@@ -171,6 +153,10 @@ export class Stock implements OnInit {
       alert('Please select both source and destination branches.');
       return;
     }
+    if (!this.newTransfer.requestedById) {
+      alert('Your login session is missing a user ID. Sign in again and retry.');
+      return;
+    }
     if (this.newTransfer.fromBranchId === this.newTransfer.toBranchId) {
       alert('Source and destination branches cannot be the same.');
       return;
@@ -184,8 +170,6 @@ export class Stock implements OnInit {
     }
 
 
-    console.log(this.newTransfer);
-
     this.api.createTransfer(this.newTransfer).subscribe({
       next: (created) => {
         // Add new transfer to top of the list and close modal
@@ -194,9 +178,7 @@ export class Stock implements OnInit {
       },
       error: (err) => {
         console.error(err);
-        alert(
-          'Failed to create transfer.\n\nPlease ensure User ID 1 and Status ID 1 exist in your database to prevent 500 errors.',
-        );
+        alert(err?.error?.message || 'Failed to create transfer.');
       },
     });
   }

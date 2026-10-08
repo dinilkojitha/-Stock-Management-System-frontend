@@ -89,7 +89,7 @@ interface NavItem {
   label: string;
   link: string;
   icon: string;
-  requiredRoles?: string[]; // Pluralized to match filter logic
+  feature: string;
 }
 
 @Component({
@@ -128,65 +128,22 @@ export class SidebarComponent {
 
   // Updated property name to `requiredRoles` across all items
   private allNavItems: NavItem[] = [
-    { label: 'User Registration', link: '/app/auth', icon: '👤', requiredRoles: ['ADMIN'] },
-    {
-      label: 'Inventory',
-      link: '/app/inventory',
-      icon: '📦',
-      requiredRoles: ['INVENTORY_MANAGER', 'ADMIN' ,'STAFF'],
-    },
-    {
-      label: 'Stock Transfers',
-      link: '/app/stock',
-      icon: '🔄',
-      requiredRoles: ['WAREHOUSE', 'ADMIN', 'STAFF'],
-    },
-    {
-      label: 'Distribution',
-      link: '/app/distribution',
-      icon: '📑',
-      requiredRoles: ['DISTRIBUTION', 'ADMIN'],
-    },
-    {
-      label: 'Procurement',
-      link: '/app/procurement',
-      icon: '🚚',
-      requiredRoles: ['PROCUREMENT', 'ADMIN'],
-    },
-    { label: 'Organization', link: '/app/organization', icon: '🏢', requiredRoles: ['ADMIN'] },
-    {
-      label: 'AI Forecasting',
-      link: '/app/forecasting',
-      icon: '📈',
-      requiredRoles: ['ANALYST', 'ADMIN'],
-    },
-    { label: 'Audit Trails', link: '/app/audit', icon: '🔒', requiredRoles: ['AUDITOR', 'ADMIN'] },
+    { label: 'Dashboard', link: '/app/dashboard', icon: '📊', feature: 'dashboard' },
+    { label: 'User Registration', link: '/app/auth', icon: '👤', feature: 'auth' },
+    { label: 'Inventory', link: '/app/inventory', icon: '📦', feature: 'inventory' },
+    { label: 'Batches & Expiry', link: '/app/batches', icon: '🧾', feature: 'stock' },
+    { label: 'Stock Transfers', link: '/app/stock', icon: '🔄', feature: 'stock' },
+    { label: 'Distribution', link: '/app/distribution', icon: '📑', feature: 'distribution' },
+    { label: 'Procurement', link: '/app/procurement', icon: '🚚', feature: 'procurement' },
+    { label: 'Organization', link: '/app/organization', icon: '🏢', feature: 'organization' },
+    { label: 'AI Forecasting', link: '/app/forecasting', icon: '📈', feature: 'forecasting' },
+    { label: 'Audit Trails', link: '/app/audit', icon: '🔒', feature: 'audit' },
   ];
 
   /**
    * Getter that filters items based on whether the current user has access
    */
   get visibleNavItems(): NavItem[] {
-    const userRole = this.authService.getCurrentRole()?.toUpperCase();
-
-    return this.allNavItems.filter((item) => {
-      // 1. If no roles are defined, allow access
-      if (!item.requiredRoles || item.requiredRoles.length === 0) {
-        return true;
-      }
-
-      // 2. If user has no role, block access
-      if (!userRole) {
-        return false;
-      }
-
-      // 3. ADMIN can access EVERYTHING
-      if (userRole === 'ADMIN') {
-        return true;
-      }
-
-      // 4. Check if user's role exists in requiredRoles array
-      return item.requiredRoles.includes(userRole);
-    });
+    return this.allNavItems.filter((item) => this.authService.hasAccess(item.feature));
   }
 }

@@ -2,6 +2,7 @@ import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../core/services/api.service';
+import { AuthService } from '../../core/services/auth.service';
 import {
   ConsumptionResponseDTO,
   InternalRequest,
@@ -21,6 +22,7 @@ import {
 })
 export class Distribution implements OnInit {
   private api = inject(ApiService);
+  private auth = inject(AuthService);
 
   // UI State
   activeTab = signal<'requests' | 'consumptions'>('requests');
@@ -37,7 +39,7 @@ export class Distribution implements OnInit {
   // Forms
   newRequest: CreateInternalRequestDTO = {
     departmentId: 0,
-    requestedByUserId: 1, // Exposed in HTML so user can change it
+    requestedByUserId: 0,
     requestedAt: new Date().toISOString(),
     emergencyRequest: false,
     status: 'PENDING',
@@ -49,6 +51,10 @@ export class Distribution implements OnInit {
   consumptionForm: ConsumptionDTO = { requestId: 0, departmentId: 0, items: [] };
 
   selectedRequest: InternalRequest | null = null;
+
+  get currentUserName(): string {
+    return this.auth.session()?.fullName || 'Current user';
+  }
 
   ngOnInit() {
     this.loadData();
@@ -87,8 +93,9 @@ export class Distribution implements OnInit {
       alert('Please select a Department!');
       return;
     }
-    if (!this.newRequest.requestedByUserId) {
-      alert('Please provide a User ID!');
+    const requestedByUserId = this.auth.session()?.id;
+    if (!requestedByUserId) {
+      alert('Your login session is missing a user ID. Sign in again and retry.');
       return;
     }
     if (this.newRequest.items.length === 0) {
@@ -98,7 +105,9 @@ export class Distribution implements OnInit {
 
     this.newRequest.requestedAt = new Date().toISOString();
 
-    this.api.createInternalRequest(this.newRequest).subscribe({
+    this.api
+      .createInternalRequest({ ...this.newRequest, requestedByUserId })
+      .subscribe({
       next: () => {
         this.activeModal.set('none');
         this.newRequest.items = []; // reset
@@ -108,11 +117,7 @@ export class Distribution implements OnInit {
       },
       error: (err) => {
         console.error('Request creation failed:', err);
-        alert(
-          'Backend failed. Ensure User ID ' +
-            this.newRequest.requestedByUserId +
-            ' exists in the DB.',
-        );
+        alert(err?.error?.message || 'Failed to create the request.');
       },
     });
   }

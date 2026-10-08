@@ -18,33 +18,32 @@ interface UserLogin {
 export class Login {
   email = '';
   password = '';
-  private payload: UserLogin | undefined;
+  errorMessage: string | null = null;
+  isSubmitting = false;
 
-  // 2. Inject Router in constructor
   constructor(
     private authService: AuthService,
     private router: Router,
   ) {}
 
   onSubmit() {
-    if (this.email && this.password) {
-      this.payload = { email: this.email, password: this.password };
-      console.log('Authenticating:', this.email);
+    if (this.isSubmitting || !this.email || !this.password) return;
 
-      this.authService.login(this.payload).subscribe({
-        next: (session) => {
-          console.log('Login successful:', session);
+    this.errorMessage = null;
+    this.isSubmitting = true;
+    const credentials: UserLogin = { email: this.email, password: this.password };
 
-          // Save session first
-          localStorage.setItem('stock_session', JSON.stringify(session));
-
-          // 3. Use Angular Router navigate instead of window.location.href
-          this.router.navigate(['/app']);
-        },
-        error: (err) => {
-          console.error('Login failed:', err);
-        },
-      });
-    }
+    this.authService.login(credentials).subscribe({
+      next: () => {
+        this.isSubmitting = false;
+        this.router.navigate(['/app']);
+      },
+      error: (error) => {
+        console.error('Login failed:', error);
+        this.errorMessage =
+          error?.error?.message || 'Sign-in failed. Check your details and try again.';
+        this.isSubmitting = false;
+      },
+    });
   }
 }

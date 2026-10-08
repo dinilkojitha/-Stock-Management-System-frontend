@@ -1,0 +1,137 @@
+<main class="mx-auto max-w-7xl space-y-6 p-4 sm:p-6 lg:p-8">
+  <header class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+    <div>
+      <h1 class="text-2xl font-bold tracking-tight text-slate-900">Inventory dashboard</h1>
+      <p class="mt-1 text-sm text-slate-500">
+        Current stock overview, inventory value, and items that need attention.
+      </p>
+    </div>
+    <button
+      type="button"
+      (click)="loadDashboard()"
+      [disabled]="summaryLoading() || lowStockLoading()"
+      class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-wait disabled:opacity-60"
+    >
+      Refresh
+    </button>
+  </header>
+
+  @if (summaryError()) {
+    <section role="alert" class="flex items-center justify-between rounded-lg border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">
+      <span>{{ summaryError() }}</span>
+      <button type="button" (click)="loadDashboard()" class="font-semibold underline">Retry</button>
+    </section>
+  }
+
+  @if (summary(); as data) {
+    <section aria-label="Inventory summary" class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      <article class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <p class="text-sm font-medium text-slate-500">Inventory items</p>
+        <p class="mt-2 text-3xl font-bold text-slate-900">{{ data.totalItems }}</p>
+      </article>
+      <article class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <p class="text-sm font-medium text-slate-500">Units in stock</p>
+        <p class="mt-2 text-3xl font-bold text-slate-900">{{ data.totalQuantity | number:'1.0-2' }}</p>
+      </article>
+      <article class="rounded-xl border border-amber-200 bg-amber-50 p-5 shadow-sm">
+        <p class="text-sm font-medium text-amber-800">Low-stock items</p>
+        <p class="mt-2 text-3xl font-bold text-amber-900">{{ data.lowStockItems }}</p>
+      </article>
+      <article class="rounded-xl border border-rose-200 bg-rose-50 p-5 shadow-sm">
+        <p class="text-sm font-medium text-rose-800">Expired batches</p>
+        <p class="mt-2 text-3xl font-bold text-rose-900">{{ data.expiredBatches }}</p>
+      </article>
+      <article class="rounded-xl border border-orange-200 bg-orange-50 p-5 shadow-sm">
+        <p class="text-sm font-medium text-orange-800">Expiring in 30 days</p>
+        <p class="mt-2 text-3xl font-bold text-orange-900">{{ data.expiringSoonBatches }}</p>
+      </article>
+      <article class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <p class="text-sm font-medium text-slate-500">Inventory value</p>
+        <p class="mt-2 text-3xl font-bold text-slate-900">{{ data.totalInventoryValue | currency }}</p>
+      </article>
+    </section>
+  } @else if (summaryLoading()) {
+    <p role="status" class="rounded-xl border border-slate-200 bg-white p-6 text-sm text-slate-500">
+      Loading inventory summary...
+    </p>
+  }
+
+  <section class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+    <div class="flex flex-col gap-3 border-b border-slate-200 p-5 sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <h2 class="font-semibold text-slate-900">Low-stock alerts</h2>
+        <p class="mt-1 text-sm text-slate-500">Items at or below their reorder threshold.</p>
+      </div>
+      <a routerLink="/app/inventory" class="text-sm font-semibold text-indigo-600 hover:text-indigo-800">
+        View inventory
+      </a>
+    </div>
+
+    @if (lowStockError()) {
+      <div role="alert" class="flex items-center justify-between p-5 text-sm text-rose-700">
+        <span>{{ lowStockError() }}</span>
+        <button type="button" (click)="loadDashboard()" class="font-semibold underline">Retry</button>
+      </div>
+    } @else if (lowStockLoading()) {
+      <p role="status" class="p-5 text-sm text-slate-500">Loading low-stock items...</p>
+    } @else {
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm">
+          <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+            <tr>
+              <th scope="col" class="px-5 py-3 font-semibold">Item</th>
+              <th scope="col" class="px-5 py-3 font-semibold">Category</th>
+              <th scope="col" class="px-5 py-3 text-right font-semibold">Available</th>
+              <th scope="col" class="px-5 py-3 text-right font-semibold">Reorder at</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            @for (item of lowStockItems(); track item.id) {
+              <tr>
+                <td class="px-5 py-3 font-medium text-slate-900">{{ item.itemName }}</td>
+                <td class="px-5 py-3 text-slate-600">{{ item.category.name }}</td>
+                <td class="px-5 py-3 text-right font-semibold text-rose-700">
+                  {{ item.totalQuantity | number:'1.0-2' }} {{ item.unitType.name }}
+                </td>
+                <td class="px-5 py-3 text-right text-slate-600">
+                  {{ item.reorderThreshold | number:'1.0-2' }} {{ item.unitType.name }}
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="4" class="px-5 py-8 text-center text-slate-500">
+                  No items are below their reorder threshold.
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </section>
+
+  <nav aria-label="Quick actions" class="grid gap-3 sm:grid-cols-3">
+    <a routerLink="/app/inventory" class="rounded-xl border border-slate-200 bg-white p-4 text-sm font-semibold text-slate-700 shadow-sm hover:border-indigo-300 hover:text-indigo-700">
+      Manage inventory
+    </a>
+    <a routerLink="/app/stock" class="rounded-xl border border-slate-200 bg-white p-4 text-sm font-semibold text-slate-700 shadow-sm hover:border-indigo-300 hover:text-indigo-700">
+      Manage branch transfers
+    </a>
+    <a routerLink="/app/batches" class="rounded-xl border border-slate-200 bg-white p-4 text-sm font-semibold text-slate-700 shadow-sm hover:border-indigo-300 hover:text-indigo-700">
+      Receive and track stock batches
+    </a>
+    <a routerLink="/app/distribution" class="rounded-xl border border-slate-200 bg-white p-4 text-sm font-semibold text-slate-700 shadow-sm hover:border-indigo-300 hover:text-indigo-700">
+      Manage department requests
+    </a>
+    @if (auth.hasAccess('procurement')) {
+      <a routerLink="/app/procurement" class="rounded-xl border border-slate-200 bg-white p-4 text-sm font-semibold text-slate-700 shadow-sm hover:border-indigo-300 hover:text-indigo-700">
+        Manage procurement
+      </a>
+    }
+    @if (auth.hasAccess('forecasting')) {
+      <a routerLink="/app/forecasting" class="rounded-xl border border-slate-200 bg-white p-4 text-sm font-semibold text-slate-700 shadow-sm hover:border-indigo-300 hover:text-indigo-700">
+        View demand forecasts
+      </a>
+    }
+  </nav>
+</main>

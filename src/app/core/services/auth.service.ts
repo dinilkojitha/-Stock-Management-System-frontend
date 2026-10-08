@@ -19,11 +19,12 @@ export interface Department {
 }
 
 export interface AuthSession {
+  id: number;
   fullName: string;
   email: string;
-  phoneNumber: string;
-  role: Role;             // Changed from string to Role object
-  department: Department; // Matches your department object
+  phoneNumber: string | null;
+  role: Role;
+  department: Department;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -31,10 +32,11 @@ export class AuthService {
   private http = inject(HttpClient);
   private router = inject(Router);
 
-  session = signal<AuthSession | null>(null);
+  session = signal<AuthSession | null>(this.loadSession());
 
   private accessLevels: { [role: string]: string[] } = {
     ADMIN: [
+      'dashboard',
       'inventory',
       'auth',
       'stock',
@@ -44,21 +46,12 @@ export class AuthService {
       'forecasting',
       'audit',
     ],
-    MANAGER: ['inventory', 'stock', 'distribution', 'procurement', 'forecasting'],
-    STAFF: ['inventory', 'stock', 'distribution'],
+    MANAGER: ['dashboard', 'inventory', 'stock', 'distribution', 'procurement', 'forecasting'],
+    STAFF: ['dashboard', 'inventory', 'stock', 'distribution'],
 
   };
 
-  // login(credentials: { username: string; password: string }) {
-  //   return this.http.post<AuthSession>('/api/auth/login', credentials).pipe(
-  //     tap((res) => {
-  //       localStorage.setItem('stock_session', JSON.stringify(res));
-  //       this.session.set(res);
-  //     }),
-  //   );
-  // }
-
-  login(credentials: any) {
+  login(credentials: { email: string; password: string }) {
     return this.http.post<AuthSession>('http://localhost:8080/api/users/login', credentials).pipe(
       tap((res) => {
         localStorage.setItem('stock_session', JSON.stringify(res));
@@ -75,9 +68,40 @@ export class AuthService {
 
   private loadSession(): AuthSession | null {
     const raw = localStorage.getItem('stock_session');
-    return raw ? JSON.parse(raw) : null;
+    if (!raw) return null;
+
+    try {
+      const session: unknown = JSON.parse(raw);
+      if (this.isAuthSession(session)) return session;
+
+      console.error('Stored login session has an invalid shape; removing it.');
+    } catch (error) {
+      console.error('Could not restore the stored login session; removing it.', error);
+    }
+
+    localStorage.removeItem('stock_session');
+    return null;
   }
 
+  private isAuthSession(value: unknown): value is AuthSession {
+    if (typeof value !== 'object' || value === null) return false;
+
+    const session = value as Record<string, unknown>;
+    const role = session['role'];
+    const department = session['department'];
+
+    return (
+      typeof session['id'] === 'number' &&
+      typeof session['fullName'] === 'string' &&
+      typeof session['email'] === 'string' &&
+      (typeof session['phoneNumber'] === 'string' || session['phoneNumber'] === null) &&
+      typeof role === 'object' &&
+      role !== null &&
+      typeof (role as Record<string, unknown>)['name'] === 'string' &&
+      typeof department === 'object' &&
+      department !== null
+    );
+  }
 
   /**
    * Get the current user's role dynamically from the session
@@ -88,9 +112,7 @@ export class AuthService {
   getCurrentRole(): string | null {
     const currentSession = this.session();
 
-    // Safely check if session exists, then role, then name
     if (currentSession && currentSession.role && currentSession.role.name) {
-      // Converts "Admin" to "ADMIN" to match your accessLevels keys perfectly
       return currentSession.role.name.toUpperCase();
     }
 

@@ -46,20 +46,17 @@
         />
       </div>
 
-      <!-- Utilities -->
-      <div class="flex items-center justify-between px-2">
-        <label class="flex items-center gap-2 cursor-pointer group">
-          <input type="checkbox" class="w-4 h-4 rounded-full text-indigo-500 border-slate-300 focus:ring-indigo-500 cursor-pointer accent-indigo-500" />
-          <span class="text-xs font-medium text-slate-500 group-hover:text-slate-700 transition-colors">Remember me</span>
-        </label>
-      </div>
+      @if (errorMessage) {
+        <p role="alert" class="text-sm text-rose-600 text-center">{{ errorMessage }}</p>
+      }
 
       <!-- Primary Button (Gradient + Pill Shape) -->
       <button
         type="submit"
+        [disabled]="isSubmitting"
         class="w-full mt-2 px-6 py-3.5 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white rounded-full text-sm font-bold tracking-wide shadow-lg shadow-indigo-500/30 hover:shadow-indigo-500/50 transform hover:-translate-y-0.5 transition-all duration-200"
       >
-        Sign In
+        {{ isSubmitting ? 'Signing in...' : 'Sign In' }}
       </button>
 
     </form>
