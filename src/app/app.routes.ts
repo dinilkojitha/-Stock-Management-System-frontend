@@ -10,18 +10,23 @@ import { Organization } from './features/organization/organization';
 import { Forecasting } from './features/forecasting/forecasting';
 import { Audit } from './features/audit/audit';
 import { Login } from './features/login/login';
+import { Register } from './features/register/register';
 import { Dashboard } from './features/dashboard/dashboard';
 import { StockBatches } from './features/stock-batches/stock-batches';
+import { Reports } from './features/reports/reports';
+import { Profile } from './features/profile/profile';
 import { roleGuard } from './core/services/role.guard';
 
 export const routes: Routes = [
   { path: '', component: Landing },
   { path: 'login', component: Login },
+  { path: 'register', component: Register },
   {
     path: 'app',
     component: ShellComponent,
     children: [
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
+      { path: 'profile', component: Profile },
       {
         path: 'dashboard',
         component: Dashboard,
@@ -81,6 +86,12 @@ export const routes: Routes = [
         component: Audit,
         canActivate: [roleGuard],
         data: { feature: 'audit' },
+      },
+      {
+        path: 'reports',
+        component: Reports,
+        canActivate: [roleGuard],
+        data: { feature: 'reports' },
       },
     ],
   },

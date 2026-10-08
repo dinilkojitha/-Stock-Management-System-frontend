@@ -1,0 +1,116 @@
+<main class="mx-auto max-w-5xl space-y-6 p-4 sm:p-6 lg:p-8">
+  <header>
+    <h1 class="text-2xl font-bold tracking-tight text-slate-900">My Profile</h1>
+    <p class="mt-1 text-sm text-slate-500">View and update your account details and password.</p>
+  </header>
+
+  @if (loading()) {
+    <section role="status" class="rounded-xl border border-slate-200 bg-white p-6 text-sm text-slate-500 shadow-sm">
+      Loading your profile...
+    </section>
+  } @else if (profile(); as user) {
+    @if (profileError()) {
+      <p role="alert" class="rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">{{ profileError() }}</p>
+    }
+
+    <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <div class="border-b border-slate-100 bg-gradient-to-r from-indigo-50 to-white px-6 py-5">
+        <div class="flex items-center gap-4">
+          <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-600 text-xl font-bold text-white">
+            {{ user.fullName.charAt(0).toUpperCase() }}
+          </div>
+          <div>
+            <h2 class="text-lg font-semibold text-slate-900">{{ user.fullName }}</h2>
+            <p class="text-sm text-slate-500">{{ user.roleName }}@if (user.departmentName) { · {{ user.departmentName }} }</p>
+          </div>
+        </div>
+      </div>
+
+      <form (ngSubmit)="saveProfile()" class="space-y-5 p-6">
+        <div>
+          <h3 class="font-semibold text-slate-900">Personal information</h3>
+          <p class="mt-1 text-xs text-slate-500">Edit your name, email address, and phone number.</p>
+        </div>
+
+        <div class="grid gap-4 sm:grid-cols-2">
+          <label class="space-y-1.5">
+            <span class="text-sm font-medium text-slate-700">Full name</span>
+            <input name="fullName" [(ngModel)]="profileForm.fullName" required
+              class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100">
+          </label>
+          <label class="space-y-1.5">
+            <span class="text-sm font-medium text-slate-700">Email address</span>
+            <input name="email" type="email" [(ngModel)]="profileForm.email" required
+              class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100">
+          </label>
+          <label class="space-y-1.5">
+            <span class="text-sm font-medium text-slate-700">Phone number</span>
+            <input name="phoneNumber" type="tel" [(ngModel)]="profileForm.phoneNumber"
+              class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100">
+          </label>
+          <div class="space-y-1.5">
+            <span class="block text-sm font-medium text-slate-700">Role</span>
+            <p class="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-600">{{ user.roleName }}</p>
+          </div>
+          @if (user.departmentName) {
+            <div class="space-y-1.5">
+              <span class="block text-sm font-medium text-slate-700">Department</span>
+              <p class="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-600">{{ user.departmentName }}</p>
+            </div>
+          }
+        </div>
+
+        @if (profileMessage()) {
+          <p role="status" class="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700">{{ profileMessage() }}</p>
+        }
+        <div class="flex justify-end border-t border-slate-100 pt-4">
+          <button type="submit" [disabled]="savingProfile()"
+            class="rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60">
+            {{ savingProfile() ? 'Saving...' : 'Save profile' }}
+          </button>
+        </div>
+      </form>
+    </section>
+
+    <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <div class="border-b border-slate-100 px-6 py-5">
+        <h2 class="font-semibold text-slate-900">Change password</h2>
+        <p class="mt-1 text-xs text-slate-500">Confirm your current password before choosing a new one.</p>
+      </div>
+      <form (ngSubmit)="changePassword()" class="space-y-4 p-6">
+        <div class="grid gap-4 sm:grid-cols-2">
+          <label class="space-y-1.5 sm:col-span-2">
+            <span class="text-sm font-medium text-slate-700">Current password</span>
+            <input name="currentPassword" type="password" autocomplete="current-password"
+              [(ngModel)]="passwordForm.currentPassword" required
+              class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100">
+          </label>
+          <label class="space-y-1.5">
+            <span class="text-sm font-medium text-slate-700">New password</span>
+            <input name="newPassword" type="password" autocomplete="new-password"
+              [(ngModel)]="passwordForm.newPassword" minlength="8" required
+              class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100">
+          </label>
+          <label class="space-y-1.5">
+            <span class="text-sm font-medium text-slate-700">Confirm new password</span>
+            <input name="confirmPassword" type="password" autocomplete="new-password"
+              [(ngModel)]="passwordForm.confirmPassword" minlength="8" required
+              class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100">
+          </label>
+        </div>
+        @if (passwordError()) {
+          <p role="alert" class="rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">{{ passwordError() }}</p>
+        }
+        @if (passwordMessage()) {
+          <p role="status" class="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700">{{ passwordMessage() }}</p>
+        }
+        <div class="flex justify-end border-t border-slate-100 pt-4">
+          <button type="submit" [disabled]="changingPassword()"
+            class="rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60">
+            {{ changingPassword() ? 'Updating...' : 'Update password' }}
+          </button>
+        </div>
+      </form>
+    </section>
+  }
+</main>

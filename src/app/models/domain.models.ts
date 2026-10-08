@@ -10,7 +10,7 @@ export interface UserRequest {
   email: string;
   phoneNumber: string;
   roleId: number;
-  departmentId: number;
+  departmentId: number | null;
   password?: string; // Optional on update, required on create
 }
 
@@ -21,8 +21,8 @@ export interface UserResponse {
   roleName: string;
   email: string;
   phoneNumber: string;
-  departmentId: number;
-  departmentName: string;
+  departmentId: number | null;
+  departmentName: string | null;
 }
 
 export interface TransferItemResponseDto {
@@ -89,6 +89,7 @@ export interface InventoryItem {
   description: string;
   reorderThreshold: number;
   unitPrice: number;
+  archived?: boolean;
 }
 
 export interface InventoryDashboardSummary {
@@ -174,6 +175,7 @@ export interface StockAllocationDTO {
 }
 
 export interface StockAllocationRequestDTO {
+  allocatedByUserId: number;
   items: StockAllocationDTO[];
 }
 
@@ -196,6 +198,19 @@ export interface ConsumptionResponseDTO {
   allocatedQuantity: number;
   quantityConsumed: number;
   consumedAt: string;
+}
+
+export interface InternalRequestItemRecord {
+  id: {
+    requestId: number;
+    itemId: number;
+  };
+  item: {
+    id: number;
+    itemName: string;
+  };
+  quantity: number;
+  allocatedQuantity: number | null;
 }
 //////////////////////////////////////////////////////////////////////////////////////////////
 // --- DISTRIBUTION DOMAIN ---
@@ -229,6 +244,7 @@ export interface StockAllocationDTO {
 }
 
 export interface StockAllocationRequestDTO {
+  allocatedByUserId: number;
   items: StockAllocationDTO[];
 }
 
@@ -258,28 +274,30 @@ export interface ConsumptionResponseDTO {
 export interface OrderItemRequest {
   itemId: number;
   quantity: number;
-  unitCost: number;
-}
-
-export interface OrderRequest {
-  supplierId: number;
-  createdByUserId: number;
-  expectedDeliveryDate: string; // ISO date string
-  items: OrderItemRequest[];
 }
 
 export interface OrderItemResponse {
   itemId: number;
   itemName: string;
   quantity: number;
+  receivedQuantity: number;
   unitCost: number;
 }
 
-// Merged OrderResponse
+export interface OrderRequest {
+  supplierId: number;
+  branchId: number;
+  createdByUserId: number;
+  expectedDeliveryDate: string;
+  items: OrderItemRequest[];
+}
+
 export interface OrderResponse {
   id: number;
   supplierId: number;
   supplierName: string;
+  branchId: number | null;
+  branchName: string | null;
   createdByUserId: number;
   orderDate: string;
   expectedDeliveryDate: string;
@@ -287,15 +305,25 @@ export interface OrderResponse {
   totalCost: number;
   status: string;
   items: OrderItemResponse[];
-
-  // Fallbacks for older mock UI
-  orderNumber?: string;
-  totalAmount?: number;
 }
 
 export interface DeliveryUpdateRequest {
-  status: string;
-  actualDeliveryDate: string; // ISO date string
+  status: 'PENDING' | 'SHIPPED' | 'DELAYED';
+  actualDeliveryDate?: string;
+}
+
+export interface OrderReceiptItemRequest {
+  itemId: number;
+  quantity: number;
+  manufactureDate?: string;
+  expiryDate?: string;
+}
+
+export interface OrderReceiptRequest {
+  branchId: number;
+  receivedByUserId: number;
+  actualDeliveryDate?: string;
+  items: OrderReceiptItemRequest[];
 }
 
 export interface SupplierRequest {
@@ -306,7 +334,6 @@ export interface SupplierRequest {
   address: string;
 }
 
-// Merged SupplierResponse
 export interface SupplierResponse {
   id: number;
   companyName: string;
@@ -314,35 +341,29 @@ export interface SupplierResponse {
   email: string;
   phoneNumber: string;
   address: string;
-
-  // Fallbacks for older mock UI
-  name?: string;
-  contactEmail?: string;
-  phone?: string;
-  rating?: number;
 }
 
 export interface EvaluationRequest {
   evaluatedByUserId: number;
   rating: number;
-  deliveryRating: number;
-  qualityRating: number;
-  comments: string;
+  deliveryRating?: number;
+  qualityRating?: number;
+  comments?: string;
 }
 
 export interface SupplierRatingResponse {
   supplierId: number;
-  companyName: string;
+  supplierName: string;
   averageRating: number;
-  totalEvaluations: number;
+  evaluationCount: number;
 }
 
 export interface QuotationRequest {
   supplierId: number;
-  items: OrderItemRequest[];
+  itemId: number;
   quotedUnitCost: number;
   availableQuantity: number;
-  validUntil: string; // ISO date string
+  validUntil?: string;
   status?: string;
   notes?: string;
 }
@@ -355,11 +376,117 @@ export interface QuotationResponse {
   itemName: string;
   quotedUnitCost: number;
   availableQuantity: number;
-  validUntil: string;
+  validUntil: string | null;
   status: string;
-  notes: string;
+  notes: string | null;
   createdAt: string;
 }
+
+// export interface OrderItemRequest {
+//   itemId: number;
+//   quantity: number;
+//   unitCost: number;
+// }
+//
+// export interface OrderRequest {
+//   supplierId: number;
+//   createdByUserId: number;
+//   expectedDeliveryDate: string; // ISO date string
+//   items: OrderItemRequest[];
+// }
+//
+// export interface OrderItemResponse {
+//   itemId: number;
+//   itemName: string;
+//   quantity: number;
+//   unitCost: number;
+// }
+//
+// // Merged OrderResponse
+// export interface OrderResponse {
+//   id: number;
+//   supplierId: number;
+//   supplierName: string;
+//   createdByUserId: number;
+//   orderDate: string;
+//   expectedDeliveryDate: string;
+//   actualDeliveryDate: string | null;
+//   totalCost: number;
+//   status: string;
+//   items: OrderItemResponse[];
+//
+//   // Fallbacks for older mock UI
+//   orderNumber?: string;
+//   totalAmount?: number;
+// }
+//
+// export interface DeliveryUpdateRequest {
+//   status: string;
+//   actualDeliveryDate: string; // ISO date string
+// }
+//
+// export interface SupplierRequest {
+//   companyName: string;
+//   contactPerson: string;
+//   email: string;
+//   phoneNumber: string;
+//   address: string;
+// }
+//
+// // Merged SupplierResponse
+// export interface SupplierResponse {
+//   id: number;
+//   companyName: string;
+//   contactPerson: string;
+//   email: string;
+//   phoneNumber: string;
+//   address: string;
+//
+//   // Fallbacks for older mock UI
+//   name?: string;
+//   contactEmail?: string;
+//   phone?: string;
+//   rating?: number;
+// }
+//
+// export interface EvaluationRequest {
+//   evaluatedByUserId: number;
+//   rating: number;
+//   deliveryRating: number;
+//   qualityRating: number;
+//   comments: string;
+// }
+//
+// export interface SupplierRatingResponse {
+//   supplierId: number;
+//   companyName: string;
+//   averageRating: number;
+//   totalEvaluations: number;
+// }
+//
+// export interface QuotationRequest {
+//   supplierId: number;
+//   items: OrderItemRequest[];
+//   quotedUnitCost: number;
+//   availableQuantity: number;
+//   validUntil: string; // ISO date string
+//   status?: string;
+//   notes?: string;
+// }
+//
+// export interface QuotationResponse {
+//   id: number;
+//   supplierId: number;
+//   supplierName: string;
+//   itemId: number;
+//   itemName: string;
+//   quotedUnitCost: number;
+//   availableQuantity: number;
+//   validUntil: string;
+//   status: string;
+//   notes: string;
+//   createdAt: string;
+// }
 
 // --- ORGANIZATION DOMAIN ---
 export interface BranchRequest {
@@ -438,6 +565,7 @@ export interface DepartmentResponse {
 // --- FORECASTING DOMAIN ---
 export interface PlanningRecommendation {
   itemId: number;
+  branchName: string;
   itemName: string;
   currentStock: number;
   reorderThreshold: number;

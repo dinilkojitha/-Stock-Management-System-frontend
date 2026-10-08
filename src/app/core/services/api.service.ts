@@ -30,6 +30,7 @@ import {
   CreateInternalRequestDTO,
   StockAllocationRequestDTO,
   ConsumptionDTO,
+  InternalRequestItemRecord,
   AuditTransaction,
   CreateTransactionRequest,
   Role,
@@ -37,6 +38,7 @@ import {
   UserRequest,
   StockBatch,
   StockBatchRequest,
+  OrderReceiptRequest,
 } from '../../models/domain.models';
 
 @Injectable({ providedIn: 'root' })
@@ -64,6 +66,10 @@ export class ApiService {
   // --- USERS ---
   getUsers(): Observable<UserResponse[]> {
     return this.http.get<UserResponse[]>(`${this.base}/users`);
+  }
+
+  getUserById(id: number): Observable<UserResponse> {
+    return this.http.get<UserResponse>(`${this.base}/users/${id}`);
   }
 
   createUser(user: UserRequest): Observable<UserResponse> {
@@ -100,9 +106,12 @@ export class ApiService {
     return this.http.post<StockTransferResponse>(`${this.base}/stock-transfers`, request);
   }
 
-  // PUT /api/stock-transfers/{id}/approve
-  approveTransfer(id: number): Observable<StockTransferResponse> {
-    return this.http.put<StockTransferResponse>(`${this.base}/stock-transfers/${id}/approve`, {});
+  // PUT /api/stock-transfers/{id}/approve/{approvedByUserId}
+  approveTransfer(id: number, approvedByUserId: number): Observable<StockTransferResponse> {
+    return this.http.put<StockTransferResponse>(
+      `${this.base}/stock-transfers/${id}/approve/${approvedByUserId}`,
+      {},
+    );
   }
 
   // PUT /api/stock-transfers/{id}/reject
@@ -154,6 +163,10 @@ export class ApiService {
     return this.http.get<InventoryItem[]>(`${this.base}/inventory-items`);
   }
 
+  getArchivedInventory(): Observable<InventoryItem[]> {
+    return this.http.get<InventoryItem[]>(`${this.base}/inventory-items/archived`);
+  }
+
   getStockBatches(): Observable<StockBatch[]> {
     return this.http.get<StockBatch[]>(`${this.base}/stocks`);
   }
@@ -202,9 +215,15 @@ export class ApiService {
     return this.http.put<InventoryItem>(`${this.base}/inventory-items/${id}/update`, item);
   }
 
-  deleteInventoryItem(id: number): Observable<void> {
-    return this.http.delete<void>(`${this.base}/inventory-items/delete/${id}`, {
-      responseType: 'text' as 'json',
+  archiveInventoryItem(id: number): Observable<string> {
+    return this.http.delete(`${this.base}/inventory-items/delete/${id}`, {
+      responseType: 'text',
+    });
+  }
+
+  restoreInventoryItem(id: number): Observable<string> {
+    return this.http.put(`${this.base}/inventory-items/${id}/restore`, null, {
+      responseType: 'text',
     });
   }
 
@@ -218,9 +237,17 @@ export class ApiService {
     return this.http.get<InternalRequest[]>(`${this.base}/internal-requests`);
   }
 
+  getInternalRequestItems(): Observable<InternalRequestItemRecord[]> {
+    return this.http.get<InternalRequestItemRecord[]>(`${this.base}/internal-request-items`);
+  }
+
   // Maps to @PostMapping("/complete")
   createInternalRequest(request: CreateInternalRequestDTO): Observable<InternalRequest> {
     return this.http.post<InternalRequest>(`${this.base}/internal-requests/complete`, request);
+  }
+
+  updateInternalRequestStatus(id: number, status: string): Observable<InternalRequest> {
+    return this.http.put<InternalRequest>(`${this.base}/internal-requests/${id}/update`, { status });
   }
 
   // Maps to @DeleteMapping("/{id}/delete")
@@ -241,6 +268,10 @@ export class ApiService {
 
   createConsumption(request: ConsumptionDTO): Observable<ConsumptionResponseDTO[]> {
     return this.http.post<ConsumptionResponseDTO[]>(`${this.base}/consumptions`, request);
+  }
+
+  addConsumption(id: number, quantity: number): Observable<unknown> {
+    return this.http.put(`${this.base}/consumptions/${id}`, quantity);
   }
 
   // // --- DISTRIBUTION / INTERNAL REQUESTS ---
@@ -286,10 +317,13 @@ export class ApiService {
     return this.http.delete(`${this.base}/forecasts/${id}`, { responseType: 'text' });
   }
 
-  getPlanningRecommendation(itemId: number, period: string): Observable<string> {
-    return this.http.get(`${this.base}/forecasts/planning/${itemId}?forecastPeriod=${period}`, {
-      responseType: 'text',
-    });
+  getPlanningRecommendation(itemId: number, period: string, branchId?: number): Observable<string> {
+    const params = new URLSearchParams({ forecastPeriod: period });
+    if (branchId !== undefined) params.set('branchId', String(branchId));
+    return this.http.get(
+      `${this.base}/forecasts/planning/${itemId}?${params.toString()}`,
+      { responseType: 'text' },
+    );
   }
 
   recordWastage(
@@ -465,64 +499,137 @@ export class ApiService {
 
   // --- ORDERS ---
 
-  createOrder(request: OrderRequest): Observable<OrderResponse> {
-    return this.http.post<OrderResponse>(`${this.base}/orders`, request);
-  }
+  // createOrder(request: OrderRequest): Observable<OrderResponse> {
+  //   return this.http.post<OrderResponse>(`${this.base}/orders`, request);
+  // }
+  //
+  // getOrders(): Observable<OrderResponse[]> {
+  //   return this.http.get<OrderResponse[]>(`${this.base}/orders`);
+  // }
+  //
+  // getItems(): Observable<InventoryItem[]> {
+  //   return this.http.get<InventoryItem[]>(`${this.base}/inventory-items/all`);
+  // }
+  // getOrderById(id: number): Observable<OrderResponse> {
+  //   return this.http.get<OrderResponse>(`${this.base}/orders/${id}`);
+  // }
+  //
+  // updateDelivery(id: number, request: DeliveryUpdateRequest): Observable<OrderResponse> {
+  //   return this.http.patch<OrderResponse>(`${this.base}/orders/${id}/delivery`, request);
+  // }
+  //
+  // // --- SUPPLIERS ---
+  // createSupplier(request: SupplierRequest): Observable<SupplierResponse> {
+  //   return this.http.post<SupplierResponse>(`${this.base}/suppliers`, request);
+  // }
+  //
+  // getSuppliers(): Observable<SupplierResponse[]> {
+  //   return this.http.get<SupplierResponse[]>(`${this.base}/suppliers`);
+  // }
+  //
+  // getSupplierById(id: number): Observable<SupplierResponse> {
+  //   return this.http.get<SupplierResponse>(`${this.base}/suppliers/${id}`);
+  // }
+  //
+  // updateSupplier(id: number, request: SupplierRequest): Observable<SupplierResponse> {
+  //   return this.http.put<SupplierResponse>(`${this.base}/suppliers/${id}`, request);
+  // }
+  //
+  // deleteSupplier(id: number): Observable<void> {
+  //   return this.http.delete<void>(`${this.base}/suppliers/${id}`);
+  // }
+  //
+  // evaluateSupplier(id: number, request: EvaluationRequest): Observable<SupplierRatingResponse> {
+  //   return this.http.post<SupplierRatingResponse>(
+  //     `${this.base}/suppliers/${id}/evaluations`,
+  //     request,
+  //   );
+  // }
+  //
+  // getSupplierRating(id: number): Observable<SupplierRatingResponse> {
+  //   return this.http.get<SupplierRatingResponse>(`${this.base}/suppliers/${id}/rating`);
+  // }
+  //
+  // // --- QUOTATIONS ---
+  // createQuotation(request: QuotationRequest): Observable<QuotationResponse> {
+  //   return this.http.post<QuotationResponse>(`${this.base}/quotations`, request);
+  // }
+  //
+  // getQuotations(itemId?: number): Observable<QuotationResponse[]> {
+  //   const url = itemId ? `${this.base}/quotations?itemId=${itemId}` : `${this.base}/quotations`;
+  //   return this.http.get<QuotationResponse[]>(url);
+  // }
 
-  getOrders(): Observable<OrderResponse[]> {
+  // ==================== ORDERS ====================
+
+  getOrders() {
     return this.http.get<OrderResponse[]>(`${this.base}/orders`);
   }
 
-  getItems(): Observable<InventoryItem[]> {
-    return this.http.get<InventoryItem[]>(`${this.base}/inventory-items/all`);
-  }
-  getOrderById(id: number): Observable<OrderResponse> {
+  getOrderById(id: number) {
     return this.http.get<OrderResponse>(`${this.base}/orders/${id}`);
   }
 
-  updateDelivery(id: number, request: DeliveryUpdateRequest): Observable<OrderResponse> {
+  createOrder(request: OrderRequest) {
+    return this.http.post<OrderResponse>(`${this.base}/orders`, request);
+  }
+
+  updateDelivery(id: number, request: DeliveryUpdateRequest) {
     return this.http.patch<OrderResponse>(`${this.base}/orders/${id}/delivery`, request);
   }
 
-  // --- SUPPLIERS ---
-  createSupplier(request: SupplierRequest): Observable<SupplierResponse> {
-    return this.http.post<SupplierResponse>(`${this.base}/suppliers`, request);
+  receiveOrder(id: number, request: OrderReceiptRequest) {
+    return this.http.post<OrderResponse>(`${this.base}/orders/${id}/receipts`, request);
   }
 
-  getSuppliers(): Observable<SupplierResponse[]> {
+  // ==================== SUPPLIERS ====================
+
+  getSuppliers() {
     return this.http.get<SupplierResponse[]>(`${this.base}/suppliers`);
   }
 
-  getSupplierById(id: number): Observable<SupplierResponse> {
+  getSupplierById(id: number) {
     return this.http.get<SupplierResponse>(`${this.base}/suppliers/${id}`);
   }
 
-  updateSupplier(id: number, request: SupplierRequest): Observable<SupplierResponse> {
+  createSupplier(request: SupplierRequest) {
+    return this.http.post<SupplierResponse>(`${this.base}/suppliers`, request);
+  }
+
+  updateSupplier(id: number, request: SupplierRequest) {
     return this.http.put<SupplierResponse>(`${this.base}/suppliers/${id}`, request);
   }
 
-  deleteSupplier(id: number): Observable<void> {
-    return this.http.delete<void>(`${this.base}/suppliers/${id}`);
+  deleteSupplier(id: number) {
+    return this.http.delete(`${this.base}/suppliers/${id}`);
   }
 
-  evaluateSupplier(id: number, request: EvaluationRequest): Observable<SupplierRatingResponse> {
+  // ==================== SUPPLIER EVALUATION ====================
+
+  evaluateSupplier(supplierId: number, request: EvaluationRequest) {
     return this.http.post<SupplierRatingResponse>(
-      `${this.base}/suppliers/${id}/evaluations`,
+      `${this.base}/suppliers/${supplierId}/evaluations`,
       request,
     );
   }
 
-  getSupplierRating(id: number): Observable<SupplierRatingResponse> {
-    return this.http.get<SupplierRatingResponse>(`${this.base}/suppliers/${id}/rating`);
+  getSupplierRating(supplierId: number) {
+    return this.http.get<SupplierRatingResponse>(`${this.base}/suppliers/${supplierId}/rating`);
   }
 
-  // --- QUOTATIONS ---
-  createQuotation(request: QuotationRequest): Observable<QuotationResponse> {
-    return this.http.post<QuotationResponse>(`${this.base}/quotations`, request);
-  }
+  // ==================== QUOTATIONS ====================
 
-  getQuotations(itemId?: number): Observable<QuotationResponse[]> {
-    const url = itemId ? `${this.base}/quotations?itemId=${itemId}` : `${this.base}/quotations`;
+  getQuotations(itemId?: number) {
+    let url = `${this.base}/quotations`;
+
+    if (itemId) {
+      url += `?itemId=${itemId}`;
+    }
+
     return this.http.get<QuotationResponse[]>(url);
+  }
+
+  createQuotation(request: QuotationRequest) {
+    return this.http.post<QuotationResponse>(`${this.base}/quotations`, request);
   }
 }

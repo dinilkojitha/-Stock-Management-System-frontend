@@ -110,6 +110,13 @@ interface NavItem {
       </div>
 
       <nav class="flex-1 px-3 py-4 space-y-1 text-xs font-medium overflow-y-auto">
+        <a
+          routerLink="/app/profile"
+          routerLinkActive="bg-indigo-600 text-white"
+          class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 transition"
+        >
+          <span>👤</span> My Profile
+        </a>
         @for (item of visibleNavItems; track item.link) {
           <a
             [routerLink]="item.link"
@@ -138,6 +145,7 @@ export class SidebarComponent {
     { label: 'Organization', link: '/app/organization', icon: '🏢', feature: 'organization' },
     { label: 'AI Forecasting', link: '/app/forecasting', icon: '📈', feature: 'forecasting' },
     { label: 'Audit Trails', link: '/app/audit', icon: '🔒', feature: 'audit' },
+    { label: 'Reports', link: '/app/reports', icon: '📄', feature: 'reports' },
   ];
 
   /**

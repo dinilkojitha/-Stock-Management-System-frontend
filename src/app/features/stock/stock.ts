@@ -85,12 +85,26 @@ export class Stock implements OnInit {
   }
 
   approve(id: number) {
-    this.api.approveTransfer(id).subscribe({
+    const approvedByUserId = this.currentUserId;
+    if (!approvedByUserId) {
+      alert('Your login session is missing a user ID. Sign in again and retry.');
+      return;
+    }
+
+    this.api.approveTransfer(id, approvedByUserId).subscribe({
       next: (updated) => {
         this.transfers.update((list) => list.map((t) => (t.id === id ? updated : t)));
         if (this.selectedTransfer()?.id === id) this.selectedTransfer.set(updated);
       },
-      error: (err) => alert(err?.error?.message || 'Could not approve transfer'),
+      error: (err) => {
+        console.error(`Failed to approve transfer ${id}:`, err);
+        alert(
+          err?.error?.detail ||
+            err?.error?.message ||
+            err?.message ||
+            'Could not approve transfer.',
+        );
+      },
     });
   }
 

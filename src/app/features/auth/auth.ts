@@ -30,7 +30,7 @@ export class Auth implements OnInit {
     email: '',
     phoneNumber: '',
     roleId: 0,
-    departmentId: 0,
+    departmentId: null,
     password: '',
   };
   roleForm: Role = { name: '', accessLevel: 50 };
@@ -74,22 +74,36 @@ export class Auth implements OnInit {
         email: '',
         phoneNumber: '',
         roleId: 0,
-        departmentId: 0,
+        departmentId: null,
         password: '',
       };
     }
     this.activeModal.set('user');
   }
 
+  isAdminRole(roleId = this.userForm.roleId): boolean {
+    const role = this.roles().find((candidate) => candidate.id === Number(roleId));
+    return role?.name.trim().toLowerCase() === 'admin';
+  }
+
+  onUserRoleChange(roleId: number) {
+    this.userForm.roleId = Number(roleId);
+    if (this.isAdminRole()) this.userForm.departmentId = null;
+  }
+
   saveUser() {
-    if (!this.userForm.roleId || !this.userForm.departmentId) {
-      alert('Role and Department are required.');
+    if (!this.userForm.roleId || (!this.isAdminRole() && !this.userForm.departmentId)) {
+      alert('Select a role and, for non-admin users, a department.');
       return;
     }
 
+    const requestBody: UserRequest = {
+      ...this.userForm,
+      departmentId: this.isAdminRole() ? null : Number(this.userForm.departmentId),
+    };
     const request = this.isEditing()
-      ? this.api.updateUser(this.editId(), this.userForm)
-      : this.api.createUser(this.userForm);
+      ? this.api.updateUser(this.editId(), requestBody)
+      : this.api.createUser(requestBody);
 
     request.subscribe({
       next: () => {
