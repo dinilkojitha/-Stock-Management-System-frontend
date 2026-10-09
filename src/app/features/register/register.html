@@ -71,12 +71,12 @@
           Public registration is unavailable because the Staff role is not configured. Please
           contact your system administrator.
         </p>
-      } @else if (departments().length === 0) {
+      } @else if (branches().length === 0) {
         <p
           role="alert"
           class="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700"
         >
-          No departments are available for registration. Please contact your system administrator.
+          No branches are available for registration. Please contact your system administrator.
         </p>
       } @else {
         <form (ngSubmit)="submit()" #registrationForm="ngForm" class="space-y-4">
@@ -118,18 +118,31 @@
             />
           </label>
           <label class="block">
+            <span class="sr-only">Branch</span>
+            <select
+              name="branchId"
+              [ngModel]="selectedBranchId"
+              (ngModelChange)="onBranchChange($event)"
+              required
+              class="w-full rounded-full border border-slate-200 bg-white/80 px-6 py-3.5 text-sm font-medium text-slate-700 shadow-sm outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
+            >
+              <option [ngValue]="null">Select branch</option>
+              @for (branch of branches(); track branch.id) {
+                <option [ngValue]="branch.id">{{ branch.name || branch.branchName }}</option>
+              }
+            </select>
+          </label>
+          <label class="block">
             <span class="sr-only">Department</span>
             <select
               name="departmentId"
               [(ngModel)]="form.departmentId"
-              required
-              class="w-full rounded-full border border-slate-200 bg-white/80 px-6 py-3.5 text-sm font-medium text-slate-700 shadow-sm outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
+              [disabled]="!selectedBranchId || departmentsForSelectedBranch.length === 0"
+              class="w-full rounded-full border border-slate-200 bg-white/80 px-6 py-3.5 text-sm font-medium text-slate-700 shadow-sm outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 disabled:bg-slate-100"
             >
-              <option [ngValue]="0" disabled>Select department</option>
-              @for (department of departments(); track department.id) {
-                <option [ngValue]="department.id">
-                  {{ department.departmentName }} — {{ department.branchName }}
-                </option>
+              <option [ngValue]="null">No department (optional)</option>
+              @for (department of departmentsForSelectedBranch; track department.id) {
+                <option [ngValue]="department.id">{{ department.departmentName }}</option>
               }
             </select>
           </label>

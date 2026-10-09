@@ -18,12 +18,19 @@ export interface Department {
   branch: any;
 }
 
+export interface SessionBranch {
+  id: number;
+  name: string;
+  location: string;
+}
+
 export interface AuthSession {
   id: number;
   fullName: string;
   email: string;
   phoneNumber: string | null;
   role: Role;
+  branch?: SessionBranch | null;
   department: Department | null;
 }
 
@@ -34,7 +41,7 @@ export class AuthService {
 
   session = signal<AuthSession | null>(this.loadSession());
 
-  private accessLevels: { [role: string]: string[] } = {
+  private readonly accessLevels: Record<string, readonly string[]> = {
     ADMIN: [
       'dashboard',
       'inventory',
@@ -47,9 +54,60 @@ export class AuthService {
       'audit',
       'reports',
     ],
-    MANAGER: ['dashboard', 'inventory', 'stock', 'distribution', 'procurement', 'forecasting', 'reports'],
+    SYSTEM_ADMIN: [
+      'dashboard',
+      'inventory',
+      'auth',
+      'stock',
+      'distribution',
+      'procurement',
+      'organization',
+      'forecasting',
+      'audit',
+      'reports',
+    ],
+    SYSTEM_ADMINISTRATOR: [
+      'dashboard',
+      'inventory',
+      'auth',
+      'stock',
+      'distribution',
+      'procurement',
+      'organization',
+      'forecasting',
+      'audit',
+      'reports',
+    ],
+    BRANCH_MANAGER: [
+      'dashboard',
+      'inventory',
+      'stock',
+      'distribution',
+      'procurement',
+      'forecasting',
+      'reports',
+    ],
+    MANAGER: [
+      'dashboard',
+      'inventory',
+      'stock',
+      'distribution',
+      'procurement',
+      'forecasting',
+      'reports',
+    ],
+    WAREHOUSE_OFFICER: [
+      'dashboard',
+      'inventory',
+      'stock',
+      'distribution',
+      'procurement',
+      'audit',
+      'reports',
+    ],
+    DEPARTMENT_STAFF: ['dashboard', 'inventory', 'distribution'],
+    INVENTORY_CLERK: ['dashboard', 'inventory', 'stock', 'distribution'],
     STAFF: ['dashboard', 'inventory', 'stock', 'distribution'],
-
   };
 
   login(credentials: { email: string; password: string }) {
@@ -113,10 +171,18 @@ export class AuthService {
     const currentSession = this.session();
 
     if (currentSession && currentSession.role && currentSession.role.name) {
-      return currentSession.role.name.toUpperCase();
+      return this.normalizeRoleName(currentSession.role.name);
     }
 
     return null;
+  }
+
+  private normalizeRoleName(roleName: string): string {
+    return roleName
+      .trim()
+      .toUpperCase()
+      .replace(/[^A-Z0-9]+/g, '_')
+      .replace(/^_+|_+$/g, '');
   }
 
   isLoggedIn(): boolean {

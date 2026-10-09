@@ -114,9 +114,12 @@ export class ApiService {
     );
   }
 
-  // PUT /api/stock-transfers/{id}/reject
-  rejectTransfer(id: number): Observable<StockTransferResponse> {
-    return this.http.put<StockTransferResponse>(`${this.base}/stock-transfers/${id}/reject`, {});
+  // PUT /api/stock-transfers/{id}/reject/{rejectedByUserId}
+  rejectTransfer(id: number, rejectedByUserId: number): Observable<StockTransferResponse> {
+    return this.http.put<StockTransferResponse>(
+      `${this.base}/stock-transfers/${id}/reject/${rejectedByUserId}`,
+      {},
+    );
   }
 
   // GET /api/stock-transfers/{id}/pdf

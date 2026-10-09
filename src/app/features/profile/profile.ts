@@ -66,6 +66,7 @@ export class Profile implements OnInit {
       email: this.profileForm.email.trim(),
       phoneNumber: this.profileForm.phoneNumber.trim(),
       roleId: current.roleId,
+      branchId: current.branchId,
       departmentId: current.departmentId,
     };
 
@@ -126,6 +127,7 @@ export class Profile implements OnInit {
       email: current.email,
       phoneNumber: current.phoneNumber || '',
       roleId: current.roleId,
+      branchId: current.branchId,
       departmentId: current.departmentId,
       password: newPassword,
     };

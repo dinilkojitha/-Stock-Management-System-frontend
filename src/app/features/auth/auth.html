@@ -26,6 +26,7 @@
           <tr>
             <th class="py-3 px-4">Employee</th>
             <th class="py-3 px-4">Contact</th>
+            <th class="py-3 px-4">Branch</th>
             <th class="py-3 px-4">Department</th>
             <th class="py-3 px-4">Role</th>
             <th class="py-3 px-4 text-center">Actions</th>
@@ -42,6 +43,7 @@
                   <p class="font-medium text-slate-700">{{ u.email }}</p>
                   <p class="text-slate-500">{{ u.phoneNumber }}</p>
                 </td>
+                <td class="py-3 px-4 text-slate-600 font-medium">{{ u.branchName || 'Not assigned' }}</td>
                 <td class="py-3 px-4 text-slate-600 font-medium">{{ u.departmentName || 'Not assigned' }}</td>
                 <td class="py-3 px-4">
                   <span class="px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 font-bold text-[10px] tracking-wide">{{ u.roleName }}</span>
@@ -52,7 +54,7 @@
                 </td>
               </tr>
             } @empty {
-              <tr><td colspan="5" class="p-8 text-center text-slate-400">No users found.</td></tr>
+              <tr><td colspan="6" class="p-8 text-center text-slate-400">No users found.</td></tr>
             }
           </tbody>
         </table>
@@ -119,26 +121,46 @@
           <div><label class="block mb-1 font-medium text-slate-700">Email Address</label><input type="email" [(ngModel)]="userForm.email" class="w-full border rounded-lg p-2 focus:ring-2 text-black focus:ring-indigo-600 outline-none"></div>
           <div><label class="block mb-1 font-medium text-slate-700">Phone Number</label><input [(ngModel)]="userForm.phoneNumber" class="w-full border rounded-lg p-2 focus:ring-2 text-black focus:ring-indigo-600 outline-none"></div>
 
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="block mb-1 font-medium text-slate-700">Role</label>
-              <select [ngModel]="userForm.roleId" (ngModelChange)="onUserRoleChange($event)" class="w-full border rounded-lg p-2 bg-white text-black focus:ring-2 focus:ring-indigo-600 outline-none">
-                <option [ngValue]="0" disabled>Select Role</option>
-                @for (r of roles(); track r.id) { <option [ngValue]="r.id">{{ r.name }}</option> }
-              </select>
-            </div>
-            @if (!isAdminRole()) {
-            <div>
-              <label class="block mb-1 font-medium text-slate-700">Department</label>
-              <select [(ngModel)]="userForm.departmentId" class="w-full border rounded-lg p-2 bg-white text-black focus:ring-2 focus:ring-indigo-600 outline-none">
-                <option [ngValue]="null" disabled>Select Dept</option>
-                @for (d of departments(); track d.id) { <option [ngValue]="d.id">{{ d.departmentName }}</option> }
-              </select>
-            </div>
-            } @else {
-              <p class="col-span-2 self-center text-xs text-slate-500">Admin accounts do not need a department or branch.</p>
-            }
+          <div>
+            <label class="block mb-1 font-medium text-slate-700">Role</label>
+            <select [ngModel]="userForm.roleId" (ngModelChange)="onUserRoleChange($event)" class="w-full border rounded-lg p-2 bg-white text-black focus:ring-2 focus:ring-indigo-600 outline-none">
+              <option [ngValue]="0" disabled>Select Role</option>
+              @for (r of roles(); track r.id) { <option [ngValue]="r.id">{{ r.name }}</option> }
+            </select>
           </div>
+          @if (!isAdminRole()) {
+            <div>
+              <label class="block mb-1 font-medium text-slate-700">Branch (Required)</label>
+              <select
+                [ngModel]="selectedBranchId"
+                (ngModelChange)="onUserBranchChange($event)"
+                class="w-full border rounded-lg p-2 bg-white text-black focus:ring-2 focus:ring-indigo-600 outline-none"
+              >
+                <option [ngValue]="null">Select Branch</option>
+                @for (branch of branches(); track branch.id) {
+                  <option [ngValue]="branch.id">{{ branch.name || branch.branchName }}</option>
+                }
+              </select>
+            </div>
+            <div>
+              <label class="block mb-1 font-medium text-slate-700">Department (Optional)</label>
+              <select
+                [(ngModel)]="userForm.departmentId"
+                [disabled]="!selectedBranchId"
+                class="w-full border rounded-lg p-2 bg-white text-black focus:ring-2 focus:ring-indigo-600 outline-none disabled:bg-slate-100 disabled:text-slate-400"
+              >
+                <option [ngValue]="null">No department</option>
+                @for (d of departmentsForSelectedBranch; track d.id) {
+                  <option [ngValue]="d.id">{{ d.departmentName }}</option>
+                }
+              </select>
+              @if (selectedBranchId && departmentsForSelectedBranch.length === 0) {
+                <p class="mt-1 text-xs text-amber-700">No departments are configured for this branch.</p>
+              }
+            </div>
+          } @else {
+            <p class="text-xs text-slate-500">Admin accounts do not need a department or branch.</p>
+          }
 
           <div class="pt-4 border-t border-slate-100">
             <label class="block mb-1 font-medium text-slate-700">Password</label>

@@ -85,6 +85,16 @@ export class Stock implements OnInit {
   }
 
   approve(id: number) {
+    const transfer = this.transfers().find((candidate) => candidate.id === id);
+    if (!transfer) {
+      alert('This stock transfer is no longer available. Refresh the list and try again.');
+      return;
+    }
+    if (!this.canProcessTransfer(transfer)) {
+      alert('Only a different user from the source branch can approve this transfer.');
+      return;
+    }
+
     const approvedByUserId = this.currentUserId;
     if (!approvedByUserId) {
       alert('Your login session is missing a user ID. Sign in again and retry.');
@@ -109,13 +119,37 @@ export class Stock implements OnInit {
   }
 
   reject(id: number) {
-    this.api.rejectTransfer(id).subscribe({
+    const transfer = this.transfers().find((candidate) => candidate.id === id);
+    if (!transfer) {
+      alert('This stock transfer is no longer available. Refresh the list and try again.');
+      return;
+    }
+    if (!this.canProcessTransfer(transfer)) {
+      alert('Only a different user from the source branch can reject this transfer.');
+      return;
+    }
+
+    const rejectedByUserId = this.currentUserId;
+    if (!rejectedByUserId) {
+      alert('Your login session is missing a user ID. Sign in again and retry.');
+      return;
+    }
+
+    this.api.rejectTransfer(id, rejectedByUserId).subscribe({
       next: (updated) => {
         this.transfers.update((list) => list.map((t) => (t.id === id ? updated : t)));
         if (this.selectedTransfer()?.id === id) this.selectedTransfer.set(updated);
       },
       error: (err) => alert(err?.error?.message || 'Could not reject transfer'),
     });
+  }
+
+  canProcessTransfer(transfer: StockTransferResponse): boolean {
+    return (
+      this.currentUserId > 0 &&
+      transfer.requestedById !== this.currentUserId &&
+      (this.isAdmin || transfer.fromBranchId === this.currentBranchId)
+    );
   }
 
   //
@@ -134,13 +168,41 @@ export class Stock implements OnInit {
   }
 
   get currentBranchId(): number {
-    return this.auth.session()?.department?.branch?.id ?? 0;
+    const session = this.auth.session();
+    return session?.branch?.id ?? session?.department?.branch?.id ?? 0;
+  }
+
+  get isAdmin(): boolean {
+    const role = this.auth.getCurrentRole();
+    return role === 'ADMIN' || role === 'SYSTEM_ADMIN' || role === 'SYSTEM_ADMINISTRATOR';
+  }
+
+  get currentBranchName(): string {
+    const branchId = this.currentBranchId;
+    const branch = this.branches().find((candidate) => candidate.id === branchId);
+    return (
+      branch?.name ||
+      branch?.branchName ||
+      this.auth.session()?.branch?.name ||
+      this.auth.session()?.department?.branch?.name ||
+      this.auth.session()?.department?.branch?.branchName ||
+      'Your branch'
+    );
+  }
+
+  get selectableSourceBranches(): BranchResponse[] {
+    return this.branches().filter((branch) => this.isAdmin || branch.id !== this.currentBranchId);
   }
 
   openCreateModal() {
+    if (!this.isAdmin && !this.currentBranchId) {
+      this.errorMessage.set('Your account is not assigned to a branch. Contact an administrator.');
+      return;
+    }
+
     this.newTransfer = {
-      fromBranchId: this.currentBranchId,
-      toBranchId: 0,
+      fromBranchId: 0,
+      toBranchId: this.isAdmin ? 0 : this.currentBranchId,
       requestedById: this.currentUserId, // Currently null in your JSON; check backend
       statusId: 1,
       items: [
@@ -163,6 +225,14 @@ export class Stock implements OnInit {
   }
 
   submitTransfer() {
+    if (!this.isAdmin) {
+      if (!this.currentBranchId) {
+        alert('Your account is not assigned to a branch. Contact an administrator.');
+        return;
+      }
+      this.newTransfer.toBranchId = this.currentBranchId;
+    }
+
     if (!this.newTransfer.fromBranchId || !this.newTransfer.toBranchId) {
       alert('Please select both source and destination branches.');
       return;

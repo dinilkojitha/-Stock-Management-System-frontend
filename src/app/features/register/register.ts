@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { ApiService } from '../../core/services/api.service';
-import { DepartmentResponse, Role, UserRequest } from '../../models/domain.models';
+import { BranchResponse, DepartmentResponse, Role, UserRequest } from '../../models/domain.models';
 
 @Component({
   selector: 'app-register',
@@ -16,7 +16,9 @@ import { DepartmentResponse, Role, UserRequest } from '../../models/domain.model
 export class Register implements OnInit {
   private api = inject(ApiService);
 
+  branches = signal<BranchResponse[]>([]);
   departments = signal<DepartmentResponse[]>([]);
+  selectedBranchId: number | null = null;
   staffRole = signal<Role | null>(null);
   loadingReferences = signal(true);
   isSubmitting = signal(false);
@@ -29,7 +31,8 @@ export class Register implements OnInit {
     email: '',
     phoneNumber: '',
     roleId: 0,
-    departmentId: 0,
+    branchId: null,
+    departmentId: null,
     password: '',
   };
 
@@ -37,11 +40,13 @@ export class Register implements OnInit {
     forkJoin({
       roles: this.api.getRoles(),
       departments: this.api.getAllDepartments(),
+      branches: this.api.getAllBranches(),
     }).subscribe({
-      next: ({ roles, departments }) => {
+      next: ({ roles, departments, branches }) => {
         const staff = roles.find((role) => role.name.trim().toLowerCase() === 'staff');
         this.staffRole.set(staff ?? null);
         this.departments.set(departments);
+        this.branches.set(branches);
         if (staff) this.form.roleId = staff.id ?? 0;
         this.loadingReferences.set(false);
       },
@@ -55,11 +60,23 @@ export class Register implements OnInit {
     });
   }
 
+  get departmentsForSelectedBranch(): DepartmentResponse[] {
+    return this.departments().filter(
+      (department) => department.branchId === Number(this.selectedBranchId),
+    );
+  }
+
+  onBranchChange(branchId: number | null) {
+    this.selectedBranchId = branchId === null ? null : Number(branchId);
+    this.form.branchId = this.selectedBranchId;
+    this.form.departmentId = null;
+  }
+
   submit() {
     if (this.isSubmitting() || this.loadingReferences() || !this.staffRole()) return;
 
-    if (!this.form.departmentId) {
-      this.errorMessage.set('Select your department.');
+    if (!this.selectedBranchId) {
+      this.errorMessage.set('Select your branch.');
       return;
     }
     if (!this.form.password?.trim()) {
@@ -73,17 +90,23 @@ export class Register implements OnInit {
 
     this.errorMessage.set(null);
     this.isSubmitting.set(true);
-    this.api.createUser({ ...this.form, roleId: this.staffRole()!.id! }).subscribe({
-      next: () => {
-        this.registered.set(true);
-        this.isSubmitting.set(false);
-      },
-      error: (error: unknown) => {
-        console.error('Account registration failed:', error);
-        this.errorMessage.set(this.getErrorMessage(error));
-        this.isSubmitting.set(false);
-      },
-    });
+    this.api
+      .createUser({
+        ...this.form,
+        roleId: this.staffRole()!.id!,
+        branchId: this.selectedBranchId,
+      })
+      .subscribe({
+        next: () => {
+          this.registered.set(true);
+          this.isSubmitting.set(false);
+        },
+        error: (error: unknown) => {
+          console.error('Account registration failed:', error);
+          this.errorMessage.set(this.getErrorMessage(error));
+          this.isSubmitting.set(false);
+        },
+      });
   }
 
   private getErrorMessage(error: unknown): string {

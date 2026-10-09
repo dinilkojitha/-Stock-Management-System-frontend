@@ -10,6 +10,7 @@ export interface UserRequest {
   email: string;
   phoneNumber: string;
   roleId: number;
+  branchId: number | null;
   departmentId: number | null;
   password?: string; // Optional on update, required on create
 }
@@ -21,6 +22,8 @@ export interface UserResponse {
   roleName: string;
   email: string;
   phoneNumber: string;
+  branchId: number | null;
+  branchName: string | null;
   departmentId: number | null;
   departmentName: string | null;
 }

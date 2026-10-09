@@ -2,7 +2,13 @@ import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../core/services/api.service';
-import { Role, UserRequest, UserResponse, DepartmentResponse } from '../../models/domain.models';
+import {
+  BranchResponse,
+  DepartmentResponse,
+  Role,
+  UserRequest,
+  UserResponse,
+} from '../../models/domain.models';
 
 @Component({
   selector: 'app-Auth',
@@ -22,7 +28,9 @@ export class Auth implements OnInit {
   // Data
   users = signal<UserResponse[]>([]);
   roles = signal<Role[]>([]);
+  branches = signal<BranchResponse[]>([]);
   departments = signal<DepartmentResponse[]>([]);
+  selectedBranchId: number | null = null;
 
   // Forms
   userForm: UserRequest = {
@@ -30,6 +38,7 @@ export class Auth implements OnInit {
     email: '',
     phoneNumber: '',
     roleId: 0,
+    branchId: null,
     departmentId: null,
     password: '',
   };
@@ -38,6 +47,7 @@ export class Auth implements OnInit {
   ngOnInit() {
     this.loadData();
     this.api.getAllDepartments().subscribe((deps) => this.departments.set(deps));
+    this.api.getAllBranches().subscribe((branches) => this.branches.set(branches));
   }
 
   setTab(tab: 'users' | 'roles') {
@@ -64,9 +74,14 @@ export class Auth implements OnInit {
         email: user.email,
         phoneNumber: user.phoneNumber,
         roleId: user.roleId,
+        branchId: user.branchId,
         departmentId: user.departmentId,
         password: '', // Backend ignores blank passwords on update
       };
+      this.selectedBranchId =
+        user.branchId ??
+        this.departments().find((department) => department.id === user.departmentId)?.branchId ??
+        null;
     } else {
       this.isEditing.set(false);
       this.userForm = {
@@ -74,11 +89,25 @@ export class Auth implements OnInit {
         email: '',
         phoneNumber: '',
         roleId: 0,
+        branchId: null,
         departmentId: null,
         password: '',
       };
+      this.selectedBranchId = null;
     }
     this.activeModal.set('user');
+  }
+
+  get departmentsForSelectedBranch(): DepartmentResponse[] {
+    return this.departments().filter(
+      (department) => department.branchId === Number(this.selectedBranchId),
+    );
+  }
+
+  onUserBranchChange(branchId: number | null) {
+    this.selectedBranchId = branchId === null ? null : Number(branchId);
+    this.userForm.branchId = this.selectedBranchId;
+    this.userForm.departmentId = null;
   }
 
   isAdminRole(roleId = this.userForm.roleId): boolean {
@@ -88,18 +117,30 @@ export class Auth implements OnInit {
 
   onUserRoleChange(roleId: number) {
     this.userForm.roleId = Number(roleId);
-    if (this.isAdminRole()) this.userForm.departmentId = null;
+    if (this.isAdminRole()) {
+      this.selectedBranchId = null;
+      this.userForm.branchId = null;
+      this.userForm.departmentId = null;
+    }
   }
 
   saveUser() {
-    if (!this.userForm.roleId || (!this.isAdminRole() && !this.userForm.departmentId)) {
-      alert('Select a role and, for non-admin users, a department.');
+    if (
+      !this.userForm.roleId ||
+      (!this.isAdminRole() && !this.selectedBranchId)
+    ) {
+      alert('Select a role and branch for non-admin users.');
       return;
     }
 
     const requestBody: UserRequest = {
       ...this.userForm,
-      departmentId: this.isAdminRole() ? null : Number(this.userForm.departmentId),
+      branchId: this.isAdminRole() ? null : Number(this.selectedBranchId),
+      departmentId: this.isAdminRole()
+        ? null
+        : this.userForm.departmentId
+          ? Number(this.userForm.departmentId)
+          : null,
     };
     const request = this.isEditing()
       ? this.api.updateUser(this.editId(), requestBody)
