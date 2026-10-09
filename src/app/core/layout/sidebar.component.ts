@@ -15,7 +15,7 @@
 //         >
 //           S
 //         </div>
-//         <span class="font-bold text-white tracking-wide text-sm">StockCore ERP</span>
+//         <span class="font-bold text-white tracking-wide text-sm">Nexus Inventory</span>
 //       </div>
 //
 //       <nav class="flex-1 px-3 py-4 space-y-1 text-xs font-medium overflow-y-auto">
@@ -24,7 +24,7 @@
 //           routerLinkActive="bg-indigo-600 text-white"
 //           class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 transition"
 //         >
-//           <span>👤</span> User Registration
+//           <span>👥</span> User Registration
 //         </a>
 //
 //         <a
@@ -104,9 +104,9 @@ interface NavItem {
         <div
           class="h-8 w-8 rounded-lg bg-indigo-600 flex items-center justify-center font-black text-white text-sm"
         >
-          S
+          N
         </div>
-        <span class="font-bold text-white tracking-wide text-sm">StockCore ERP</span>
+        <span class="font-bold text-white tracking-wide text-sm">Nexus Inventory</span>
       </div>
 
       <nav class="flex-1 px-3 py-4 space-y-1 text-xs font-medium overflow-y-auto">
@@ -136,7 +136,7 @@ export class SidebarComponent {
   // Updated property name to `requiredRoles` across all items
   private allNavItems: NavItem[] = [
     { label: 'Dashboard', link: '/app/dashboard', icon: '📊', feature: 'dashboard' },
-    { label: 'User Registration', link: '/app/auth', icon: '👤', feature: 'auth' },
+    { label: 'User Registration', link: '/app/auth', icon: '👥', feature: 'auth' },
     { label: 'Inventory', link: '/app/inventory', icon: '📦', feature: 'inventory' },
     { label: 'Batches & Expiry', link: '/app/batches', icon: '🧾', feature: 'stock' },
     { label: 'Stock Transfers', link: '/app/stock', icon: '🔄', feature: 'stock' },

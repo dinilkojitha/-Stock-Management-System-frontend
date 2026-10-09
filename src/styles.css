@@ -1,5 +1,43 @@
 @import "tailwindcss";
 
+@theme {
+  --color-slate-50: #f8f8fb;
+  --color-slate-100: #e4e4ef;
+  --color-slate-200: #d3d3e2;
+  --color-slate-300: #b8b9cc;
+  --color-slate-400: #9293af;
+  --color-slate-500: #6c6d91;
+  --color-slate-600: #555778;
+  --color-slate-700: #404267;
+  --color-slate-800: #343654;
+  --color-slate-900: #292a49;
+  --color-slate-950: #201e45;
+
+  --color-indigo-50: #f5f5fa;
+  --color-indigo-100: #e4e4ef;
+  --color-indigo-200: #d0d0e2;
+  --color-indigo-300: #aeb0ce;
+  --color-indigo-400: #8183ad;
+  --color-indigo-500: #56587f;
+  --color-indigo-600: #404267;
+  --color-indigo-700: #343654;
+  --color-indigo-800: #292a49;
+  --color-indigo-900: #201e45;
+  --color-indigo-950: #16152f;
+
+  --color-rose-50: #fff3f3;
+  --color-rose-100: #ffe1e1;
+  --color-rose-200: #ffc7c8;
+  --color-rose-300: #f8a3a5;
+  --color-rose-400: #f58b8d;
+  --color-rose-500: #f07b7b;
+  --color-rose-600: #df686c;
+  --color-rose-700: #c8535b;
+  --color-rose-800: #a9424d;
+  --color-rose-900: #873743;
+  --color-rose-950: #4b1c27;
+}
+
 @layer base {
   body {
     @apply bg-slate-950 text-slate-100 antialiased font-sans selection:bg-indigo-500 selection:text-white;
